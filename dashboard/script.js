@@ -37,8 +37,8 @@ function init() {
                 console.error("Error initializing filters:", error);
             }
         
-            // Create visualizations (to be implemented step by step)
-            // createLineChart(filteredData, ".LineChart");
+            // Create visualizations
+            LineChartModule.createLineChart(squirrelData, ".LineChart");
             // createButterflyChart(filteredData, ".ButterflyChart");
             // createMap(filteredData, ".Map");
         })
@@ -61,8 +61,11 @@ function onFiltersChanged() {
 function updateVisualizations() {
     console.log("Updating visualizations with", filteredData.length, "records");
     
-    // Update all visualizations with filtered data
-    // updateLineChart(filteredData);
+    // Update line chart (it handles its own filtering logic)
+    LineChartModule.updateLineChart(squirrelData);
+    
+    // Update other visualizations with filtered data
     // updateButterflyChart(filteredData);
     // updateMap(filteredData);
 }
+
