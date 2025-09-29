@@ -1,18 +1,18 @@
-// Line Chart Module for Squirrel Activity vs Temperature - Production Version
+// Line Chart Module for Squirrel Activity vs Temperature
 const LineChartModule = (function() {
     
     let chart = null;
     let container = null;
     
     // Chart dimensions and margins
-    const margin = { top: 10, right: 200, bottom: 50, left: 60 };
-    const width = 600 
-    const height = 400 - margin.bottom
+    const margin = { top: 20, right: 80, bottom: 60, left: 80 };
+    const width = 600 - margin.left - margin.right;
+    const height = 400 - margin.top - margin.bottom;
     
     // Color scale for different activities
     const colorScale = d3.scaleOrdinal()
-        .domain(['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'])
-        .range(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78']);
+        .domain(['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas'])
+        .range(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']);
     
     function createLineChart(originalData, containerSelector) {
         console.log("Creating line chart with complete dataset:", originalData.length, "records");
@@ -22,17 +22,13 @@ const LineChartModule = (function() {
         // Clear any existing chart
         container.selectAll("*").remove();
         
-        // Get which activities should be highlighted (behavior filters only)
+        // Get which activities should be highlighted (but don't filter data)
         const highlightedActivities = getHighlightedActivities();
         console.log("Activities to highlight:", highlightedActivities);
         
-        // Apply non-behavior filters (color, dog, age) to the data
-        const filteredData = applyNonBehaviorFilters(originalData);
-        console.log("Data after non-behavior filtering:", filteredData.length, "records");
-        
-        // Always process with all activities for consistent scaling
-        const allActivities = ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'];
-        const processedData = processDataForChart(filteredData, allActivities);
+        // Always process the COMPLETE original dataset - no filtering!
+        const allActivities = ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas'];
+        const processedData = processDataForChart(originalData, allActivities);
         
         if (processedData.length === 0) {
             container.append("div")
@@ -56,11 +52,12 @@ const LineChartModule = (function() {
             .range([0, width]);
         
         const maxActivityValue = d3.max(processedData, d => {
+            // Use all activities for consistent Y-axis scaling
             const allValues = Object.values(d.activities);
             return allValues.length > 0 ? d3.max(allValues) : 0;
         });
         const yScale = d3.scaleLinear()
-            .domain([0, Math.max(1, maxActivityValue || 1)])
+            .domain([0, Math.max(1, maxActivityValue || 1)]) // Ensure minimum domain of 1
             .range([height, 0]);
         
         // Create line generator
@@ -88,9 +85,9 @@ const LineChartModule = (function() {
             .attr("x", -height / 2)
             .attr("fill", "black")
             .style("text-anchor", "middle")
-            .text("Activity Count (Frequency)");
+            .text("Activity Count");
         
-        // Draw lines for ALL activities with filtered dataset
+        // Draw lines for ALL activities with complete dataset
         allActivities.forEach((activity, activityIndex) => {
             const lineData = processedData.map(d => ({
                 temperature: d.temperature,
@@ -107,14 +104,14 @@ const LineChartModule = (function() {
             const activityGroup = chart.append("g")
                 .attr("class", `activity-group-${activity}`);
             
-            // Draw the line
+            // Draw the line - highlight if selected, dim if not (when filters are active)
             activityGroup.append("path")
                 .datum(lineData)
                 .attr("fill", "none")
                 .attr("stroke", colorScale(activity))
                 .attr("stroke-width", 2)
                 .attr("d", line)
-                .style("opacity", hasAnyFilters ? (isHighlighted ? 0.9 : 0.1) : 0.8);
+                .style("opacity", hasAnyFilters ? (isHighlighted ? 0.9 : 0.2) : 0.8);
             
             // Add dots for data points
             activityGroup.selectAll(`.dot-${activity}`)
@@ -125,14 +122,15 @@ const LineChartModule = (function() {
                 .attr("cy", d => yScale(d.value))
                 .attr("r", 3)
                 .attr("fill", colorScale(activity))
-                .style("opacity", hasAnyFilters ? (isHighlighted ? 0.8 : 0.1) : 0.7);
+                .style("opacity", hasAnyFilters ? (isHighlighted ? 0.8 : 0.15) : 0.7);
         });
         
-        // Add legend
+        // Add legend - always show all activities but dim non-active ones
         const legend = chart.append("g")
             .attr("transform", `translate(${width + 10}, 20)`);
         
         allActivities.forEach((activity, i) => {
+            // Determine if this activity should be highlighted in legend
             const isHighlighted = highlightedActivities.includes(activity);
             const hasAnyFilters = highlightedActivities.length < allActivities.length;
             
@@ -143,13 +141,14 @@ const LineChartModule = (function() {
                 .attr("width", 15)
                 .attr("height", 15)
                 .attr("fill", colorScale(activity))
-                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0);
+                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.3) : 1.0);
             
             legendRow.append("text")
                 .attr("x", 20)
                 .attr("y", 12)
                 .style("font-size", "12px")
-                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
+                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.4) : 1.0)
+                .style("font-weight", isHighlighted ? "bold" : "normal")
                 .text(activity);
         });
         
@@ -164,30 +163,27 @@ const LineChartModule = (function() {
         let validRecords = 0;
         
         data.forEach(record => {
-            const weather = record['Weather'];
-            if (weather !== null && weather !== undefined && !isNaN(weather)) {
-                const temp = Math.round(weather);
+            if (record.Weather && record.Weather !== null) {
+                validRecords++;
+                const temp = Math.round(record.Weather);
                 
                 if (!temperatureGroups[temp]) {
                     temperatureGroups[temp] = {
                         temperature: temp,
                         activities: {}
                     };
-                    
-                    // Initialize all activities to 0
+                    // Initialize ALL activities
                     allActivities.forEach(activity => {
                         temperatureGroups[temp].activities[activity] = 0;
                     });
                 }
                 
-                // Count activities for this temperature
+                // Count ALL activities at this temperature
                 allActivities.forEach(activity => {
-                    if (record[activity] === true || record[activity] === 1) {
+                    if (record[activity] === true) {
                         temperatureGroups[temp].activities[activity]++;
                     }
                 });
-                
-                validRecords++;
             }
         });
         
@@ -201,78 +197,33 @@ const LineChartModule = (function() {
     }
     
     function getHighlightedActivities() {
-        // Only use behavior filters for highlighting, ignore color/dog/age filters
+        // Simple logic: only highlight based on behavior filters
+        // Ignore color and dog filters for line chart highlighting
         if (typeof FilterModule !== 'undefined') {
             const currentFilters = FilterModule.getCurrentFilters();
             const behaviorFilters = currentFilters.behaviors || [];
             
             if (behaviorFilters.length === 0) {
                 // No behavior filters = show all activities normally
-                return ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'];
+                return ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas'];
             } else {
                 // Extract activity names from behavior filters
                 const highlighted = behaviorFilters
                     .map(filter => filter.split(':')[0])
-                    .filter(activity => ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'].includes(activity));
+                    .filter(activity => ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas'].includes(activity));
                 
                 return highlighted;
             }
         }
         
-        return ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'];
-    }
-    
-    function applyNonBehaviorFilters(data) {
-        // Apply color, dog, and age filters to the data (not behavior filters)
-        if (typeof FilterModule === 'undefined') {
-            return data;
-        }
-        
-        const currentFilters = FilterModule.getCurrentFilters();
-        let filtered = data.slice(); // Create a copy
-        
-        // Apply color filters (OR logic for colors)
-        if (currentFilters.colors && currentFilters.colors.length > 0) {
-            filtered = filtered.filter(record => {
-                const furColor = record['Primary Fur Color'];
-                if (!furColor) return false;
-                
-                return Array.from(currentFilters.colors).some(color => {
-                    switch(color) {
-                        case 'gray': return furColor.toLowerCase() === 'gray';
-                        case 'cinnamon': return furColor.toLowerCase() === 'cinnamon';
-                        case 'black': return furColor.toLowerCase() === 'black';
-                        default: return false;
-                    }
-                });
-            });
-        }
-        
-        // Apply age filters (OR logic for age values)
-        if (currentFilters.age && currentFilters.age.length > 0) {
-            filtered = filtered.filter(record => {
-                return Array.from(currentFilters.age).some(filterKey => {
-                    const [column, value] = filterKey.split(':');
-                    return record[column] === value;
-                });
-            });
-        }
-        
-        // Apply dog filter
-        if (currentFilters.dogs) {
-            filtered = filtered.filter(record => {
-                return record['Dogs'] && record['Dogs'] > 0;
-            });
-        }
-        
-        console.log(`Line chart data: ${filtered.length} records (from ${data.length} original) after color/dog/age filtering`);
-        return filtered;
+        return ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas'];
     }
     
     function updateLineChart(originalData) {
         console.log("Updating line chart with complete dataset:", originalData.length, "records");
         if (container) {
-            createLineChart(originalData, container.node());
+            const containerElement = container.node();
+            createLineChart(originalData, containerElement);
         } else {
             console.warn("Line chart container not found for update");
         }

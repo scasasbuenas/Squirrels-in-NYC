@@ -38,6 +38,22 @@
             padding: 10px;
             border-radius: 3px;
         }
+        
+        .chart-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .chart-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -45,7 +61,7 @@
         <h2>Filter System Test</h2>
         <p>Use the filters below to test the filtering functionality. The results will be displayed in real-time.</p>
         
-        <!-- Filter Section (same as main dashboard) -->
+        <!-- Filter Section (same as main dashboard) test -->
         <div class="filter-section">
             <div class="behavior-filters">
                 <!-- Food Filter -->
@@ -145,6 +161,10 @@
             </div>
             
             <button onclick="clearFilters()" style="margin-left: 20px; padding: 8px 16px; background-color: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear All Filters</button>
+            <button onclick="testRunningFilter()" style="margin-left: 10px; padding: 8px 16px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">Test: Running Only</button>
+            <button onclick="testFoodFilter()" style="margin-left: 10px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Test: Food Activities</button>
+            <button onclick="testMovementFilter()" style="margin-left: 10px; padding: 8px 16px; background-color: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">Test: Movement</button>
+            <button onclick="testSoundFilter()" style="margin-left: 10px; padding: 8px 16px; background-color: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Test: Sound</button>
         </div>
         
         <div class="test-results">
@@ -152,10 +172,17 @@
             <div id="filter-status"></div>
             <div class="sample-records" id="sample-records"></div>
         </div>
+        
+        <!-- Line Chart Test -->
+        <div class="chart-container">
+            <div class="chart-title">Squirrel Activity Across Temperature (Test Chart)</div>
+            <div id="line-chart-test"></div>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="./idioms/filters.js"></script>
+    <script src="./idioms/linechart_test.js"></script>
     <script>
         let squirrelData = [];
         let filteredData = [];
@@ -178,6 +205,10 @@
                     squirrelData = data;
                     filteredData = data;
                     updateDisplay();
+                    
+                    // Create the line chart with original data
+                    const initialLineChartData = applyNonBehaviorFilters(squirrelData);
+                    LineChartModule.createLineChart(initialLineChartData, "#line-chart-test");
                 })
                 .catch(function(error) {
                     console.error("Error loading data:", error);
@@ -188,6 +219,43 @@
         function onFiltersChanged() {
             filteredData = FilterModule.applyFilters(squirrelData);
             updateDisplay();
+            
+            // Apply ONLY color and dog filters to the line chart data
+            const lineChartData = applyNonBehaviorFilters(squirrelData);
+            LineChartModule.updateLineChart(lineChartData);
+        }
+        
+        function applyNonBehaviorFilters(data) {
+            // Get current filters but only apply color and dog filters
+            const currentFilters = FilterModule.getCurrentFilters();
+            let filtered = data.slice(); // Create a copy
+            
+            // Apply color filters (OR logic for colors)
+            if (currentFilters.colors.length > 0) {
+                filtered = filtered.filter(record => {
+                    const furColor = record['Primary Fur Color'];
+                    if (!furColor) return false;
+                    
+                    return Array.from(currentFilters.colors).some(color => {
+                        switch(color) {
+                            case 'gray': return furColor.toLowerCase() === 'gray';
+                            case 'cinnamon': return furColor.toLowerCase() === 'cinnamon';
+                            case 'black': return furColor.toLowerCase() === 'black';
+                            default: return false;
+                        }
+                    });
+                });
+            }
+            
+            // Apply dog filter
+            if (currentFilters.dogs) {
+                filtered = filtered.filter(record => {
+                    return record['Dogs'] && record['Dogs'] > 0;
+                });
+            }
+            
+            console.log(`Line chart data: ${filtered.length} records (from ${data.length} original) after color/dog filtering`);
+            return filtered;
         }
 
         function updateDisplay() {
@@ -224,6 +292,35 @@
 
         function clearFilters() {
             FilterModule.clearAllFilters();
+        }
+        
+        // Test functions to demonstrate filter responsiveness
+        function testRunningFilter() {
+            clearFilters();
+            // Programmatically check the Running checkbox
+            d3.select('input[data-column="Running"]').property('checked', true).dispatch('change');
+        }
+        
+        function testFoodFilter() {
+            clearFilters();
+            // Programmatically check both food-related checkboxes
+            d3.select('input[data-column="Eating"]').property('checked', true).dispatch('change');
+            d3.select('input[data-column="Foraging"]').property('checked', true).dispatch('change');
+        }
+        
+        function testMovementFilter() {
+            clearFilters();
+            // Check all movement-related checkboxes
+            d3.select('input[data-column="Running"]').property('checked', true).dispatch('change');
+            d3.select('input[data-column="Climbing"]').property('checked', true).dispatch('change');
+            d3.select('input[data-column="Chasing"]').property('checked', true).dispatch('change');
+        }
+        
+        function testSoundFilter() {
+            clearFilters();
+            // Check sound-related checkboxes
+            d3.select('input[data-column="Kuks"]').property('checked', true).dispatch('change');
+            d3.select('input[data-column="Quaas"]').property('checked', true).dispatch('change');
         }
 
         // Initialize when page loads
