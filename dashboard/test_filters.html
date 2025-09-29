@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filter Test</title>
+    <style>
+        .filter-dropdown {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #333;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: white;
+            min-width: 160px;
+            border: 2px solid #333;
+            border-top: none;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            padding: 5px 0;
+        }
+        
+        .dropdown-content.show {
+            display: block;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Filter Test</h1>
+    
+    <div class="filter-dropdown">
+        <button class="filter-btn" data-filter="food">Food ▼</button>
+        <div class="dropdown-content" data-category="food">
+            <label class="checkbox-item">
+                <input type="checkbox" data-behavior="eating" data-column="Eating">
+                <span>Eating</span>
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" data-behavior="foraging" data-column="Foraging">
+                <span>Foraging</span>
+            </label>
+        </div>
+    </div>
+
+    <script>
+        function testDropdown() {
+            console.log("Testing dropdown functionality...");
+            
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            console.log("Found buttons:", filterButtons.length);
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const filter = this.dataset.filter;
+                    console.log("Button clicked:", filter);
+                    
+                    const targetDropdown = document.querySelector(`.dropdown-content[data-category="${filter}"]`);
+                    console.log("Target dropdown:", targetDropdown);
+                    
+                    if (targetDropdown) {
+                        targetDropdown.classList.toggle('show');
+                        console.log("Toggled show class");
+                    }
+                });
+            });
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', testDropdown);
+    </script>
+</body>
+</html>

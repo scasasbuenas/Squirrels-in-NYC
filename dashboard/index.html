@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Central Park Squirrel Activity Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  </head>
+  <body onload="init()">
+    <div class="dashboard-container">
+      <!-- Title Section -->
+      <div class="title-section">
+        <h1>SQUIRREL ACTIVITY DASHBOARD</h1>
+        <h2>Central Park, NYC</h2>
+      </div>
+      
+      <!-- Filter Bar Section -->
+      <div class="filter-section">
+        <div class="behavior-filters">
+          <!-- Food Filter -->
+          <div class="filter-dropdown">
+            <button class="filter-btn" data-filter="food">Food ▼</button>
+            <div class="dropdown-content" data-category="food">
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="eating" data-column="Eating">
+                <span>Eating</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="foraging" data-column="Foraging">
+                <span>Foraging</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Movement Filter -->
+          <div class="filter-dropdown">
+            <button class="filter-btn" data-filter="movement">Movement ▼</button>
+            <div class="dropdown-content" data-category="movement">
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="running" data-column="Running">
+                <span>Running</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="climbing" data-column="Climbing">
+                <span>Climbing</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="chasing" data-column="Chasing">
+                <span>Chasing</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Sound Filter -->
+          <div class="filter-dropdown">
+            <button class="filter-btn" data-filter="sound">Sound ▼</button>
+            <div class="dropdown-content" data-category="sound">
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="kuks" data-column="Kuks">
+                <span>Kuks</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="quaas" data-column="Quaas">
+                <span>Quaas</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tail Filter -->
+          <div class="filter-dropdown">
+            <button class="filter-btn" data-filter="tail">Tail ▼</button>
+            <div class="dropdown-content" data-category="tail">
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="tail_flags" data-column="Tail flags">
+                <span>Tail Flags</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="tail_twitches" data-column="Tail twitches">
+                <span>Tail Twitches</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Human Interaction Filter -->
+          <div class="filter-dropdown">
+            <button class="filter-btn" data-filter="human">Human I ▼</button>
+            <div class="dropdown-content" data-category="human">
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="approaches" data-column="Approaches">
+                <span>Approaches</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="indifferent" data-column="Indifferent">
+                <span>Indifferent</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="runs_from" data-column="Runs from">
+                <span>Runs From</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Age Filter -->
+          <div class="filter-dropdown">
+            <button class="filter-btn" data-filter="age">Age ▼</button>
+            <div class="dropdown-content" data-category="age">
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="adult" data-column="Age" data-value="Adult">
+                <span>Adult</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="juvenile" data-column="Age" data-value="Juvenile">
+                <span>Juvenile</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="unknown" data-column="Age" data-value="Unknown">
+                <span>Unknown</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" data-behavior="question" data-column="Age" data-value="?">
+                <span>?</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dog-filter">
+          <span class="label">Dog Activity</span>
+          <div class="dog-toggle" data-dog="toggle" title="Toggle Dog Activity">
+            <div class="dog-icon">🐕</div>
+            <span class="toggle-text">Show Dogs</span>
+          </div>
+        </div>
+
+        <div class="color-filters">
+          <span class="label">Squirrel Color</span>
+          <div class="color-options">
+            <div class="color-option" data-color="gray">
+              <div class="squirrel-icon gray-squirrel"></div>
+            </div>
+            <div class="color-option" data-color="cinnamon">
+              <div class="squirrel-icon cinnamon-squirrel"></div>
+            </div>
+            <div class="color-option" data-color="black">
+              <div class="squirrel-icon black-squirrel"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Dashboard Content -->
+      <div class="dashboard-content">
+        <!-- Map Section - Full Width -->
+        <div class="map-section">
+          <div class="Map"></div>
+        </div>
+        
+        <!-- Bottom Charts Section - Side by Side -->
+        <div class="bottom-charts">
+          <!-- Butterfly Chart -->
+          <div class="butterfly-section">
+            <h3>Squirrel Activity by Fur Color and Time of Day</h3>
+            <div class="ButterflyChart"></div>
+          </div>
+          
+          <!-- Line Chart -->
+          <div class="linechart-section">
+            <h3>Squirrel Activity Across Temperature</h3>
+            <div class="LineChart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+     <script src="./idioms/filters.js"></script>
+    <script src="./script.js"></script>
+    <script src="./idioms/linechart.js"></script>
+    <script src="./idioms/butterflyChart.js"></script>
+    <script src="./idioms/map.js"></script>
+
+    <!-- Debug -->
+     <script>
+        console.log("Script tag executed")
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM Content Loaded - calling init()");
+            init();
+        })
+     </script>
+
+  </body>
+</html>

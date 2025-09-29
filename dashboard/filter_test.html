@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filter System Test</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        .test-container {
+            margin: 20px;
+            padding: 20px;
+            border: 2px solid #333;
+            background-color: #f9f9f9;
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .record-count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .sample-records {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h2>Filter System Test</h2>
+        <p>Use the filters below to test the filtering functionality. The results will be displayed in real-time.</p>
+        
+        <!-- Filter Section (same as main dashboard) -->
+        <div class="filter-section">
+            <div class="behavior-filters">
+                <!-- Food Filter -->
+                <div class="filter-dropdown">
+                    <button class="filter-btn" data-filter="food">Food ▼</button>
+                    <div class="dropdown-content" data-category="food">
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="eating" data-column="Eating">
+                            <span>Eating</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="foraging" data-column="Foraging">
+                            <span>Foraging</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Movement Filter -->
+                <div class="filter-dropdown">
+                    <button class="filter-btn" data-filter="movement">Movement ▼</button>
+                    <div class="dropdown-content" data-category="movement">
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="running" data-column="Running">
+                            <span>Running</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="climbing" data-column="Climbing">
+                            <span>Climbing</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="chasing" data-column="Chasing">
+                            <span>Chasing</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Sound Filter -->
+                <div class="filter-dropdown">
+                    <button class="filter-btn" data-filter="sound">Sound ▼</button>
+                    <div class="dropdown-content" data-category="sound">
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="kuks" data-column="Kuks">
+                            <span>Kuks</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="quaas" data-column="Quaas">
+                            <span>Quaas</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Age Filter -->
+                <div class="filter-dropdown">
+                    <button class="filter-btn" data-filter="age">Age ▼</button>
+                    <div class="dropdown-content" data-category="age">
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="adult" data-column="Age" data-value="Adult">
+                            <span>Adult</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="juvenile" data-column="Age" data-value="Juvenile">
+                            <span>Juvenile</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="unknown" data-column="Age" data-value="Unknown">
+                            <span>Unknown</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" data-behavior="question" data-column="Age" data-value="?">
+                            <span>?</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="color-filters">
+                <span class="label">Squirrel Color</span>
+                <div class="color-options">
+                    <div class="color-option" data-color="gray">
+                        <div class="squirrel-icon gray-squirrel"></div>
+                    </div>
+                    <div class="color-option" data-color="cinnamon">
+                        <div class="squirrel-icon cinnamon-squirrel"></div>
+                    </div>
+                    <div class="color-option" data-color="black">
+                        <div class="squirrel-icon black-squirrel"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="dog-filter">
+                <span class="label">Dog Activity</span>
+                <div class="dog-toggle" data-dog="toggle" title="Toggle Dog Activity">
+                    <div class="dog-icon">🐕</div>
+                    <span class="toggle-text">Show Dogs</span>
+                </div>
+            </div>
+            
+            <button onclick="clearFilters()" style="margin-left: 20px; padding: 8px 16px; background-color: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear All Filters</button>
+        </div>
+        
+        <div class="test-results">
+            <div class="record-count" id="record-count">Loading data...</div>
+            <div id="filter-status"></div>
+            <div class="sample-records" id="sample-records"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./idioms/filters.js"></script>
+    <script>
+        let squirrelData = [];
+        let filteredData = [];
+
+        function init() {
+            console.log("Initializing test page...");
+            
+            // Initialize filters
+            FilterModule.initializeFilters(onFiltersChanged);
+            
+            // Load data
+            fetch("./data/squirrel_data.json")
+                .then(response => response.text())
+                .then(text => {
+                    const cleanedText = text.replace(/:\s*NaN/g, ': null');
+                    return JSON.parse(cleanedText);
+                })
+                .then(function(data) {
+                    console.log("Data loaded:", data.length, "records");
+                    squirrelData = data;
+                    filteredData = data;
+                    updateDisplay();
+                })
+                .catch(function(error) {
+                    console.error("Error loading data:", error);
+                    document.getElementById('record-count').textContent = "Error loading data";
+                });
+        }
+
+        function onFiltersChanged() {
+            filteredData = FilterModule.applyFilters(squirrelData);
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const recordCount = document.getElementById('record-count');
+            const filterStatus = document.getElementById('filter-status');
+            const sampleRecords = document.getElementById('sample-records');
+            
+            recordCount.textContent = `Showing ${filteredData.length} of ${squirrelData.length} records`;
+            
+            // Show current filters
+            const currentFilters = FilterModule.getCurrentFilters();
+            let filterText = "Active filters: ";
+            if (currentFilters.behaviors.length === 0 && 
+                currentFilters.age.length === 0 && 
+                currentFilters.colors.length === 0 && 
+                !currentFilters.dogs) {
+                filterText += "None";
+            } else {
+                const parts = [];
+                if (currentFilters.behaviors.length > 0) parts.push(`Behaviors: ${currentFilters.behaviors.join(', ')}`);
+                if (currentFilters.age.length > 0) parts.push(`Age: ${currentFilters.age.join(', ')}`);
+                if (currentFilters.colors.length > 0) parts.push(`Colors: ${currentFilters.colors.join(', ')}`);
+                if (currentFilters.dogs) parts.push("Dogs: Show");
+                filterText += parts.join(' | ');
+            }
+            filterStatus.textContent = filterText;
+            
+            // Show sample records
+            const sample = filteredData.slice(0, 5);
+            sampleRecords.innerHTML = sample.map(record => 
+                JSON.stringify(record, null, 2)
+            ).join('\n\n---\n\n');
+        }
+
+        function clearFilters() {
+            FilterModule.clearAllFilters();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
