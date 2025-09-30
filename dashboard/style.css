@@ -19,13 +19,15 @@ body {
 }
 
 .dashboard-container {
-    max-width: auto;
+    width: 100vw;
+    max-width: 100vw;
+    min-height: 100vh;
     margin: 0 auto;
-    max-height: 100%;
-    padding: 20px;
+    padding: 2vw;
     background-color: white;
     border: 2px solid #333;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
 }
 
 /* ------- Title Section -------- */
@@ -36,20 +38,20 @@ body {
 */
 .title-section {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 2vw;
     border-bottom: 2px solid #333;
-    padding-bottom: 15px;
+    padding-bottom: 1vw;
 }
 
 .title-section h1 {
-    font-size: 2.5em;
+    font-size: 4vw;
     font-weight: bold;
     letter-spacing: 2px;
-    margin-bottom: 5px;
+    margin-bottom: 0.5vw;
 }
 
 .title-section h2 {
-    font-size: 1.2em;
+    font-size: 2vw;
     font-weight: normal;
     color: #666;
 }
@@ -64,18 +66,20 @@ body {
 */
 .filter-section {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
+    padding: 1vw;
     background-color: #f9f9f9;
     border: 1px solid #ddd;
-    margin-bottom: 20px;
+    margin-bottom: 2vw;
     overflow: visible;
+    gap: 1vw;
 }
 
 .behavior-filters {
     display: flex;
-    gap: 10px;
+    gap: 1vw;
     align-items: flex-start;
     overflow: visible;
 }
@@ -251,7 +255,7 @@ body {
 .dashboard-content {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 2vw;
 }
 
 /* ------- Map Section -------- */
@@ -264,21 +268,23 @@ body {
 */
 .map-section {
     border: 2px solid #333;
-    padding: 15px;
+    padding: 1vw;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .Map {
     width: 100%;
-    height: 300px;
+    height: 35vh;
+    min-height: 200px;
     background-color: #f0f0f0;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #666;
-    font-size: 16px;
+    font-size: 2vw;
     background-image: url('../images/central-park.jpeg');
-    background-size: contain;  /* keep ratio */
+    background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
@@ -287,8 +293,9 @@ body {
 .bottom-charts {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    height: 300px;
+    gap: 2vw;
+    height: 35vh;
+    min-height: 200px;
 }
 
 /* ------- Charts Section -------- */
@@ -298,43 +305,45 @@ body {
 .butterfly-section,
 .linechart-section {
     border: 2px solid #333;
-    padding: 15px;
+    padding: 1vw;
     background-color: white;
+    min-height: 200px;
 }
 
 .butterfly-section h3,
 .linechart-section h3 {
     text-align: center;
-    margin-bottom: 10px;
-    font-size: 16px;
+    margin-bottom: 1vw;
+    font-size: 2vw;
     font-weight: bold;
 }
 
-
 .ButterflyChart {
     width: 100%;
-    height: 250px;
+    height: 30vh;
+    min-height: 150px;
     background-color: #f9f9f9;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #666;
-    font-size: 14px;
+    font-size: 1.5vw;
     background-image: url('../images/butterfly.jpeg');
-    background-size: contain;  /* keep ratio */
+    background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
 
 .frequency-label {
     text-align: center;
-    font-size: 12px;
+    font-size: 1vw;
     font-style: italic;
 }
 
 .LineChart {
     width: 100%;
     height: 100%;
+    min-height: 150px;
 }
 
 
@@ -354,21 +363,27 @@ body {
 
 /* ------- Responsive Design -------- */
 @media (max-width: 768px) {
+    .dashboard-container {
+        padding: 2vw 1vw;
+    }
     .bottom-charts {
         grid-template-columns: 1fr;
+        height: auto;
     }
-    
     .filter-section {
         flex-direction: column;
-        gap: 10px;
+        gap: 2vw;
     }
-    
     .behavior-filters {
         justify-content: center;
         flex-wrap: wrap;
     }
-    
     .Map {
-        height: 200px;
+        height: 25vh;
+        min-height: 120px;
+    }
+    .ButterflyChart {
+        height: 20vh;
+        min-height: 100px;
     }
 }
