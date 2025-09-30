@@ -1,43 +1,40 @@
 // Line Chart Module for Squirrel Activity vs Temperature - Production Version
 const LineChartModule = (function() {
     
-    let chart = null;
-    let container = null;
-    
-    // Target size of the chart box
-    const outerWidth = 320;
-    const outerHeight = 280;
-
-    // Shrink margins to fit better
-    const margin = { top: 5, right: 5, bottom: 5, left: 5 };
-
-    // Inner drawing area
-    const width = outerWidth - margin.left - margin.right;
-    const height = outerHeight - margin.top - margin.bottom;
-
-    // Create SVG
-    /* const svg = container.append("svg")
-        .attr("width", outerWidth)
-        .attr("height", outerHeight); */
-    
     // Color scale for different activities
     const colorScale = d3.scaleOrdinal()
         .domain(['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'])
         .range(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78']);
+
+    // Store last used container selector for updates
+    let lastContainerSelector = null;
     
     function createLineChart(originalData, containerSelector) {
         console.log("Creating line chart with complete dataset:", originalData.length, "records");
         
-        container = d3.select(containerSelector);
-        
+        lastContainerSelector = containerSelector;
+        const container = d3.select(containerSelector);
+
+        if (container.empty()) {
+            console.warn("Container not found:", containerSelector);
+            return;
+        }
+
+        const width = container.node().offsetWidth || window.innerWidth;
+        const height = container.node().offsetHeight || window.innerHeight;
+
+        // Define margins
+        const margin = { top: 20, right: 150, bottom: 50, left: 50 };
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
         // Clear any existing chart
         container.selectAll("*").remove();
 
         const svg = container.append("svg")
-            .attr("width", outerWidth)
-            .attr("height", outerHeight);
-    
-        
+            .attr("width", width)
+            .attr("height", height);
+
         // Get which activities should be highlighted (behavior filters only)
         const highlightedActivities = getHighlightedActivities();
         console.log("Activities to highlight:", highlightedActivities);
@@ -58,13 +55,13 @@ const LineChartModule = (function() {
             return;
         }
         
-        chart = svg.append("g")
+        const chart = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
         
         // Create scales - always use all activities for consistent scaling
         const xScale = d3.scaleLinear()
             .domain(d3.extent(processedData, d => d.temperature))
-            .range([0, width]);
+            .range([0, chartWidth]);
         
         const maxActivityValue = d3.max(processedData, d => {
             const allValues = Object.values(d.activities);
@@ -72,7 +69,7 @@ const LineChartModule = (function() {
         });
         const yScale = d3.scaleLinear()
             .domain([0, Math.max(1, maxActivityValue || 1)])
-            .range([height, 0]);
+            .range([chartHeight, 0]);
         
         // Create line generator
         const line = d3.line()
@@ -82,10 +79,10 @@ const LineChartModule = (function() {
         
         // Add axes
         chart.append("g")
-            .attr("transform", `translate(0,${height})`)
+            .attr("transform", `translate(0,${chartHeight})`)
             .call(d3.axisBottom(xScale))
             .append("text")
-            .attr("x", width / 2)
+            .attr("x", chartWidth / 2)
             .attr("y", 40)
             .attr("fill", "black")
             .style("text-anchor", "middle")
@@ -96,7 +93,7 @@ const LineChartModule = (function() {
             .append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", -50)
-            .attr("x", -height / 2)
+            .attr("x", -chartHeight / 2)
             .attr("fill", "black")
             .style("text-anchor", "middle")
             .text("Activity Count (Frequency)");
@@ -141,7 +138,7 @@ const LineChartModule = (function() {
         
         // Add legend
         const legend = chart.append("g")
-            .attr("transform", `translate(${width + 10}, 20)`);
+            .attr("transform", `translate(${chartWidth + 10}, 20)`);
         
         allActivities.forEach((activity, i) => {
             const isHighlighted = highlightedActivities.includes(activity);
@@ -282,8 +279,8 @@ const LineChartModule = (function() {
     
     function updateLineChart(originalData) {
         console.log("Updating line chart with complete dataset:", originalData.length, "records");
-        if (container) {
-            createLineChart(originalData, container.node());
+        if (lastContainerSelector) {
+            createLineChart(originalData, lastContainerSelector);
         } else {
             console.warn("Line chart container not found for update");
         }
