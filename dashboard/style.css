@@ -290,7 +290,7 @@ body {
 /* ------- Bottom Charts Section -------- */
 .bottom-charts {
     display: grid;
-    grid-template-columns: 3fr 2fr; /* 3/2 ratio */
+    grid-template-columns: 5fr 4fr; /* 5/4 ratio */
     gap: 10px;
     height: 35vh;
     min-height: 200px;
