@@ -16,9 +16,9 @@ const LineChartModule = (function() {
     const height = outerHeight - margin.top - margin.bottom;
 
     // Create SVG
-    const svg = container.append("svg")
+    /* const svg = container.append("svg")
         .attr("width", outerWidth)
-        .attr("height", outerHeight);
+        .attr("height", outerHeight); */
     
     // Color scale for different activities
     const colorScale = d3.scaleOrdinal()
@@ -32,6 +32,11 @@ const LineChartModule = (function() {
         
         // Clear any existing chart
         container.selectAll("*").remove();
+
+        const svg = container.append("svg")
+            .attr("width", outerWidth)
+            .attr("height", outerHeight);
+    
         
         // Get which activities should be highlighted (behavior filters only)
         const highlightedActivities = getHighlightedActivities();
