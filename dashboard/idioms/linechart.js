@@ -4,10 +4,21 @@ const LineChartModule = (function() {
     let chart = null;
     let container = null;
     
-    // Chart dimensions and margins
-    const margin = { top: 10, right: 200, bottom: 50, left: 60 };
-    const width = 600 
-    const height = 400 - margin.bottom
+    // Target size of the chart box
+    const outerWidth = 320;
+    const outerHeight = 280;
+
+    // Shrink margins to fit better
+    const margin = { top: 5, right: 5, bottom: 5, left: 5 };
+
+    // Inner drawing area
+    const width = outerWidth - margin.left - margin.right;
+    const height = outerHeight - margin.top - margin.bottom;
+
+    // Create SVG
+    const svg = container.append("svg")
+        .attr("width", outerWidth)
+        .attr("height", outerHeight);
     
     // Color scale for different activities
     const colorScale = d3.scaleOrdinal()
@@ -41,11 +52,6 @@ const LineChartModule = (function() {
                 .text("No data available");
             return;
         }
-        
-        // Create SVG
-        const svg = container.append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom);
         
         chart = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);

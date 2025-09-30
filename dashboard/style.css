@@ -19,8 +19,9 @@ body {
 }
 
 .dashboard-container {
-    max-width: 1600px;
+    max-width: auto;
     margin: 0 auto;
+    max-height: 100%;
     padding: 20px;
     background-color: white;
     border: 2px solid #333;
@@ -276,6 +277,10 @@ body {
     justify-content: center;
     color: #666;
     font-size: 16px;
+    background-image: url('../images/central-park.jpeg');
+    background-size: contain;  /* keep ratio */
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 /* ------- Bottom Charts Section -------- */
@@ -283,6 +288,7 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    height: 300px;
 }
 
 /* ------- Charts Section -------- */
@@ -304,6 +310,7 @@ body {
     font-weight: bold;
 }
 
+
 .ButterflyChart {
     width: 100%;
     height: 250px;
@@ -313,6 +320,10 @@ body {
     justify-content: center;
     color: #666;
     font-size: 14px;
+    background-image: url('../images/butterfly.jpeg');
+    background-size: contain;  /* keep ratio */
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .frequency-label {
@@ -323,8 +334,9 @@ body {
 
 .LineChart {
     width: 100%;
-    height: 400px;
+    height: 100%;
 }
+
 
 /* ------- SVG Styles -------- */
 .axis {
