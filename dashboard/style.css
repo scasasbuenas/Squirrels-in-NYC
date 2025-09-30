@@ -290,11 +290,12 @@ body {
 /* ------- Bottom Charts Section -------- */
 .bottom-charts {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 3fr 2fr; /* 3/2 ratio */
     gap: 10px;
     height: 35vh;
     min-height: 200px;
 }
+
 
 /* ------- Charts Section -------- */
 /*
