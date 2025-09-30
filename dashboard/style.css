@@ -180,13 +180,13 @@ body {
 }
 
 .squirrel-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 2px solid #333;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;  /* keeps aspect ratio */
+  cursor: pointer;
 }
 
-.gray-squirrel {
+/* .gray-squirrel {
     background-color: #808080;
 }
 
@@ -196,7 +196,7 @@ body {
 
 .black-squirrel {
     background-color: #2F2F2F;
-}
+} */
 
 .dog-filter {
     display: flex;
