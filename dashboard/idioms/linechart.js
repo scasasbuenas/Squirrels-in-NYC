@@ -143,25 +143,32 @@ const LineChartModule = (function() {
 
         // Legend
         const legend = chart.append("g").attr("transform", `translate(${chartWidth + 10}, 20)`);
-        allActivities.forEach((activity, i) => {
-            const isHighlighted = highlightedActivities.includes(activity);
-            const hasAnyFilters = highlightedActivities.length < allActivities.length;
+            allActivities.forEach((activity, i) => {
+                const isHighlighted = highlightedActivities.includes(activity);
+                const hasAnyFilters = highlightedActivities.length < allActivities.length;
 
-            const legendRow = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
+                const legendRow = legend.append("g")
+                    .attr("transform", `translate(0, ${i * 20})`)
+                    .style("cursor", "pointer") // make it obvious it's clickable
+                    .on("click", () => {
+                        // Call your new toggle function in filter.js
+                        FilterModule.toggleBehavior(activity);
+                    });
 
-            legendRow.append("rect")
-                .attr("width", 15)
-                .attr("height", 15)
-                .attr("fill", colorScale(activity))
-                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0);
+                legendRow.append("rect")
+                    .attr("width", 15)
+                    .attr("height", 15)
+                    .attr("fill", colorScale(activity))
+                    .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0);
 
-            legendRow.append("text")
-                .attr("x", 20)
-                .attr("y", 12)
-                .style("font-size", "12px")
-                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
-                .text(activity);
+                legendRow.append("text")
+                    .attr("x", 20)
+                    .attr("y", 12)
+                    .style("font-size", "12px")
+                    .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
+                    .text(activity);
         });
+
 
         console.log("Line chart created successfully");
     }

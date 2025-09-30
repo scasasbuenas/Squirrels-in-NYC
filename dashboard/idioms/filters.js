@@ -251,12 +251,34 @@ const FilterModule = (function() {
         };
     }
 
+    function toggleBehavior(activity) {
+        const filterKey = `${activity}:true`; // same format you used for behaviors
+        if (activeFilters.behaviors.has(filterKey)) {
+            activeFilters.behaviors.delete(filterKey);
+            // Uncheck the corresponding checkbox
+            d3.select(`.checkbox-item input[data-column="${activity}"]`)
+            .property("checked", false);
+        } else {
+            activeFilters.behaviors.add(filterKey);
+            // Check the corresponding checkbox
+            d3.select(`.checkbox-item input[data-column="${activity}"]`)
+            .property("checked", true);
+        }
+
+        updateButtonAppearance();
+
+        if (filterChangeCallback) {
+            filterChangeCallback();
+        }
+    }
+
     // Public API
     return {
         initializeFilters: initializeFilters,
         applyFilters: applyFilters,
         clearAllFilters: clearAllFilters,
-        getCurrentFilters: getCurrentFilters
+        getCurrentFilters: getCurrentFilters,
+        toggleBehavior: toggleBehavior
     };
 })();
 
