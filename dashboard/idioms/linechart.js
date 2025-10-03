@@ -111,7 +111,7 @@ const LineChartModule = (function() {
                 .datum(lineData)
                 .attr("fill", "none")
                 .attr("stroke", colorScale(activity))
-                .attr("stroke-width", 2)
+                .attr("stroke-width", 0.5)
                 .attr("d", line)
                 .style("opacity", hasAnyFilters ? (isHighlighted ? 0.9 : 0.1) : 0.8);
 
@@ -122,7 +122,7 @@ const LineChartModule = (function() {
                 .attr("class", `dot-${activity}`)
                 .attr("cx", d => xScale(d.temperature))
                 .attr("cy", d => yScale(d.value))
-                .attr("r", 4)
+                .attr("r", 2)
                 .attr("fill", colorScale(activity))
                 .style("opacity", hasAnyFilters ? (isHighlighted ? 0.8 : 0.1) : 0.7)
                 .on("mouseover", function(event, d) {
