@@ -7,6 +7,9 @@ const LineChartModule = (function() {
         .range(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78']);
 
     let lastContainerSelector = null;
+    let xDomainGlobal = null;
+    let yDomainGlobal = null;
+
 
     function createLineChart(originalData, containerSelector) {
         lastContainerSelector = containerSelector;
@@ -44,7 +47,12 @@ const LineChartModule = (function() {
         const highlightedActivities = getHighlightedActivities();
         const filteredData = applyNonBehaviorFilters(originalData);
 
-        const allActivities = ['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'];
+        const allActivities = [
+            'Running', 'Climbing', 'Chasing', 'Eating', 'Foraging',
+            'Kuks', 'Quaas', 'Tail flags', 'Tail twitches',
+            'Approaches', 'Indifferent', 'Runs from'
+        ];
+
         const processedData = processDataForChart(filteredData, allActivities);
 
         if (processedData.length === 0) {
@@ -58,15 +66,32 @@ const LineChartModule = (function() {
         const chart = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
+        // --- FIXED SCALE DOMAINS ---
+        // Store global domains once, use them for every update
+        if (!xDomainGlobal) {
+            const allTemps = originalData
+                .map(d => Math.round(d['Weather']))
+                .filter(v => !isNaN(v));
+            xDomainGlobal = d3.extent(allTemps);
+        }
+
+        if (!yDomainGlobal) {
+            const allProcessed = processDataForChart(originalData, allActivities);
+            const maxActivityValueGlobal = d3.max(allProcessed, d =>
+                d3.max(Object.values(d.activities))
+            );
+            yDomainGlobal = [0, Math.max(1, maxActivityValueGlobal || 1)];
+        }
+
         const xScale = d3.scaleLinear()
-            .domain(d3.extent(processedData, d => d.temperature))
+            .domain(xDomainGlobal)
             .range([0, chartWidth]);
 
-        const maxActivityValue = d3.max(processedData, d => d3.max(Object.values(d.activities)));
         const yScale = d3.scaleLinear()
-            .domain([0, Math.max(1, maxActivityValue || 1)])
+            .domain(yDomainGlobal)
             .range([chartHeight, 0]);
 
+        // Line generator
         const line = d3.line()
             .x(d => xScale(d.temperature))
             .y(d => yScale(d.value))
@@ -135,43 +160,42 @@ const LineChartModule = (function() {
                     tooltip
                         .style("left", (event.clientX - bounds.left + 10) + "px")
                         .style("top", (event.clientY - bounds.top - 20) + "px");
-                    })
+                })
                 .on("mouseleave", function() {
                     tooltip.style("opacity", 0);
-                })
+                });
         });
 
         // Legend
         const legend = chart.append("g").attr("transform", `translate(${chartWidth + 10}, 20)`);
-            allActivities.forEach((activity, i) => {
-                const isHighlighted = highlightedActivities.includes(activity);
-                const hasAnyFilters = highlightedActivities.length < allActivities.length;
+        allActivities.forEach((activity, i) => {
+            const isHighlighted = highlightedActivities.includes(activity);
+            const hasAnyFilters = highlightedActivities.length < allActivities.length;
 
-                const legendRow = legend.append("g")
-                    .attr("transform", `translate(0, ${i * 20})`)
-                    .style("cursor", "pointer") // make it obvious it's clickable
-                    .on("click", () => {
-                        // Call your new toggle function in filter.js
-                        FilterModule.toggleBehavior(activity);
-                    });
+            const legendRow = legend.append("g")
+                .attr("transform", `translate(0, ${i * 20})`)
+                .style("cursor", "pointer")
+                .on("click", () => {
+                    FilterModule.toggleBehavior(activity);
+                });
 
-                legendRow.append("rect")
-                    .attr("width", 15)
-                    .attr("height", 15)
-                    .attr("fill", colorScale(activity))
-                    .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0);
+            legendRow.append("rect")
+                .attr("width", 15)
+                .attr("height", 15)
+                .attr("fill", colorScale(activity))
+                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0);
 
-                legendRow.append("text")
-                    .attr("x", 20)
-                    .attr("y", 12)
-                    .style("font-size", "12px")
-                    .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
-                    .text(activity);
+            legendRow.append("text")
+                .attr("x", 20)
+                .attr("y", 12)
+                .style("font-size", "12px")
+                .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
+                .text(activity);
         });
-
 
         console.log("Line chart created successfully");
     }
+
 
     function processDataForChart(data, allActivities) {
         const temperatureGroups = {};
