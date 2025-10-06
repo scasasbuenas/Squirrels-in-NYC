@@ -147,7 +147,7 @@ const ButterflyChartModule = (function() {
 
             // Behavior filter affects only opacity
             const isHighlighted = highlightedActivities.includes(row.activity);
-            const baseOpacity = hasAnyBehaviorFilters ? (isHighlighted ? 0.95 : 0.1) : 0.85;
+            const baseOpacity = hasAnyBehaviorFilters ? (isHighlighted ? 0.95 : 0.35) : 0.85;
 
             // Bar lengths come from filtered counts (dog/age filters)
             const filteredRow = filteredProcessed ? filteredProcessed[idx] : { am: 0, pm: 0 };
