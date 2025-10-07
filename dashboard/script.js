@@ -39,7 +39,7 @@ function init() {
         
             // Create visualizations
             LineChartModule.createLineChart(squirrelData, ".LineChart");
-            ButterflyChartModule.createButterflyChart(filteredData, ".ButterflyChart");
+            ButterflyChartModule.createButterflyChart(squirrelData, ".ButterflyChart");
             // createMap(filteredData, ".Map");
         })
         .catch(function(error) {
@@ -65,7 +65,7 @@ function updateVisualizations() {
     LineChartModule.updateLineChart(squirrelData);
     
     // Update other visualizations with filtered data
-    ButterflyChartModule.updateButterflyChart(filteredData);
+    ButterflyChartModule.updateButterflyChart(squirrelData);
     // updateMap(filteredData);
 }
 

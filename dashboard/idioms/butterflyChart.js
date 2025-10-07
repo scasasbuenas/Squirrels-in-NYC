@@ -30,6 +30,15 @@ const ButterflyChartModule = (function() {
     const filteredData = applyNonBehaviorFilters(data);
     const highlightedActivities = getHighlightedActivities();
 
+    // Active fur colors from filters
+    let activeColorSet = new Set();
+    if (typeof FilterModule !== 'undefined') {
+        const current = FilterModule.getCurrentFilters();
+        if (current && current.colors && current.colors.length > 0) {
+            activeColorSet = new Set(current.colors); // lowercase keys
+        }
+    }
+
     const filteredDataByFur = {};
     furColors.forEach(fur => {
         const furData = filteredData.filter(r => (r["Primary Fur Color"]||"").trim().toLowerCase() === fur.toLowerCase());
@@ -63,8 +72,13 @@ const ButterflyChartModule = (function() {
         const filteredProcessed = filteredDataByFur[fur];
         if (!original) return;
 
+        // Dim section if fur color not active in filters
+        const isActiveColor = activeColorSet.size === 0 
+            || activeColorSet.has(fur.toLowerCase());
+
         const group = svg.append("g")
-            .attr("transform", `translate(${i*sectionWidth},0)`);
+            .attr("transform", `translate(${i*sectionWidth},0)`)
+            .style("opacity", isActiveColor ? 1 : 0.15); // Dim if not active
 
         drawSingleButterflySection(group, original, filteredProcessed, sectionWidth, height, fur, highlightedActivities, tooltip);
     });
