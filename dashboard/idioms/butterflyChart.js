@@ -66,8 +66,7 @@ const ButterflyChartModule = (function() {
         const width = container.node().offsetWidth || 900;
         const height = container.node().offsetHeight || 500;
 
-        const legendWidth = 150;          // Reserve this width for the legend
-        const chartWidthAvailable = width - legendWidth;
+        const chartWidthAvailable = width;
         const sectionWidth = chartWidthAvailable / furColors.length;
 
         const svg = container.append("svg")
@@ -93,7 +92,7 @@ const ButterflyChartModule = (function() {
     });
 
     // Legend
-    const legend = svg.append("g")
+/*     const legend = svg.append("g")
         .attr("transform", `translate(${chartWidthAvailable + 10}, 20)`);
 
     allActivities.forEach((activity, i) => {
@@ -119,93 +118,119 @@ const ButterflyChartModule = (function() {
             .style("font-size", "12px")
             .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
             .text(activity);
-    });
+    }); */
 }
 
-    function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, shiftTotals, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
-        const margin = { top: 30, right: 20, bottom: 40, left: 20 };
-        const chartWidth = totalWidth - margin.left - margin.right;
-        const chartHeight = totalHeight - margin.top - margin.bottom;
+function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, shiftTotals, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
+    const margin = { top: 30, right: 10, bottom: 40, left: 10 };  // smaller margins
+    const chartWidth = totalWidth - margin.left - margin.right;
+    const chartHeight = totalHeight - margin.top - margin.bottom;
 
-        const chart = svgGroup.append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+    const chart = svgGroup.append("g")
+        .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-        // Title
-        svgGroup.append("text")
-            .attr("x", totalWidth / 2)
-            .attr("y", margin.top / 1.5)
-            .attr("text-anchor", "middle")
-            .attr("font-size", "16px")
-            .attr("font-weight", "bold")
-            .text(`${furColor} Squirrels`);
+    // Title
+    svgGroup.append("text")
+        .attr("x", totalWidth / 2)
+        .attr("y", margin.top / 1.5)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "16px")
+        .attr("font-weight", "bold")
+        .text(`${furColor} Squirrels`);
 
-        // Determine max for X scale
-        const domainMax = useAbsoluteScale ? fixedMax : 100;
+    const domainMax = useAbsoluteScale ? fixedMax : 100;
 
-        // Scales
-        const yScale = d3.scaleBand()
-            .domain(allActivities)
-            .range([0, chartHeight])
-            .paddingInner(0.25)
-            .paddingOuter(0.15);
+    const yScale = d3.scaleBand()
+        .domain(allActivities)
+        .range([0, chartHeight])
+        .paddingInner(0.25)
+        .paddingOuter(0.15);
 
-        const xScale = d3.scaleLinear()
-            .domain([-domainMax, domainMax])
-            .range([0, chartWidth]);
+    const hasAnyBehaviorFilters = highlightedActivities.length < allActivities.length;
+    const barHeight = Math.max(10, yScale.bandwidth() / 1.6);
 
-        const zeroX = xScale(0);
+    const amDen = Math.max(shiftTotals?.am || 0, 0);
+    const pmDen = Math.max(shiftTotals?.pm || 0, 0);
 
-        // Center line
-        chart.append("line")
-            .attr("x1", zeroX)
-            .attr("x2", zeroX)
-            .attr("y1", 0)
-            .attr("y2", chartHeight)
-            .attr("stroke", "#333");
+    const labelOffset = 40;
+    const xScale = d3.scaleLinear()
+        .domain([-domainMax, domainMax])
+        .range([0, chartWidth]);
 
-        const hasAnyBehaviorFilters = highlightedActivities.length < allActivities.length;
-        const barHeight = Math.max(10, yScale.bandwidth()/1.6);
+    // The visual center of the chart
+    const zeroX = chartWidth / 2;
 
-        // Precompute AM/PM denominators for percentages if needed
-        const amDen = useAbsoluteScale ? 1 : Math.max(shiftTotals?.am || 0, 0);
-        const pmDen = useAbsoluteScale ? 1 : Math.max(shiftTotals?.pm || 0, 0);
 
+    // Activity labels in the middle
+    chart.selectAll(".activity-label")
+        .data(allActivities)
+        .enter()
+        .append("text")
+        .attr("x", zeroX)
+        .attr("y", d => yScale(d) + barHeight / 2)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "black")
+        .style("font-size", "12px")
+        .style("opacity", d =>
+            hasAnyBehaviorFilters
+                ? (highlightedActivities.includes(d) ? 1 : 0.2)
+                : 1
+        )
+        .text(d => d);
+
+    // Left line (start of AM)
+    chart.append("line")
+        .attr("x1", zeroX - labelOffset)
+        .attr("x2", zeroX - labelOffset)
+        .attr("y1", 0)
+        .attr("y2", chartHeight)
+        .attr("stroke", "#333");
+
+    // Right line (start of PM)
+    chart.append("line")
+        .attr("x1", zeroX + labelOffset)
+        .attr("x2", zeroX + labelOffset)
+        .attr("y1", 0)
+        .attr("y2", chartHeight)
+        .attr("stroke", "#333");
+
+
+        // Bars
         originalProcessed.forEach((row, idx) => {
             const y = yScale(row.activity);
             const isHighlighted = highlightedActivities.includes(row.activity);
             const baseOpacity = hasAnyBehaviorFilters ? (isHighlighted ? 0.95 : 0.35) : 0.85;
-
             const filteredRow = filteredProcessed ? filteredProcessed[idx] : { am: 0, pm: 0 };
 
-            // Compute values once (absolute or percentage)
             const amVal = useAbsoluteScale ? filteredRow.am : (amDen ? (filteredRow.am / amDen) * 100 : 0);
             const pmVal = useAbsoluteScale ? filteredRow.pm : (pmDen ? (filteredRow.pm / pmDen) * 100 : 0);
 
-            // AM bar
+            // AM bar (left)
             chart.append("rect")
-                .attr("x", Math.min(zeroX, xScale(-amVal)))
+                .attr("x", zeroX - labelOffset - Math.abs(xScale(-amVal) - xScale(0)))
                 .attr("y", y)
                 .attr("width", Math.abs(xScale(0) - xScale(-amVal)))
                 .attr("height", barHeight)
                 .attr("fill", colorScale(row.activity))
                 .style("opacity", baseOpacity)
                 .on("mouseover", e => {
-                    const pct = useAbsoluteScale ? "" : ` (${amVal.toFixed(1)}%)`;
+                    const pct = useAbsoluteScale ? "" : ` (${amDen ? amVal.toFixed(1) + "%" : "—"})`;
                     tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
                 })
                 .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
                 .on("mouseleave", () => tooltip.style("opacity",0));
 
-            // PM bar
+            // PM bar (right)
             chart.append("rect")
-                .attr("x", Math.min(zeroX, xScale(pmVal)))
+                .attr("x", zeroX + labelOffset)
                 .attr("y", y)
-                .attr("width", Math.abs(xScale(0) - xScale(pmVal)))
+                .attr("width", Math.abs(xScale(pmVal) - xScale(0)))
                 .attr("height", barHeight)
                 .attr("fill", colorScale(row.activity))
                 .style("opacity", baseOpacity)
                 .on("mouseover", e => {
-                    const pct = useAbsoluteScale ? "" : ` (${pmVal.toFixed(1)}%)`;
+                    const pct = useAbsoluteScale ? "" : ` (${pmDen ? pmVal.toFixed(1) + "%" : "—"})`;
                     tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}${pct}`);
                 })
                 .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
@@ -214,14 +239,14 @@ const ButterflyChartModule = (function() {
 
         // AM/PM labels
         chart.append("text")
-            .attr("x", zeroX - 40)
+            .attr("x", zeroX - labelOffset)
             .attr("y", chartHeight + 25)
             .attr("text-anchor", "end")
             .attr("fill", "black")
             .text("AM");
 
         chart.append("text")
-            .attr("x", zeroX + 40)
+            .attr("x", zeroX + labelOffset)
             .attr("y", chartHeight + 25)
             .attr("text-anchor", "start")
             .attr("fill", "black")
