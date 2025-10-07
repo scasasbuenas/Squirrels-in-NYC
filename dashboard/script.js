@@ -6,6 +6,19 @@ function init() {
 
     // Debugging Log
     console.log("Init function called");
+
+    // Add event listener for the butterfly scale toggle
+    const toggle = document.getElementById("butterfly-scale-toggle");  
+    if (toggle) {
+        toggle.checked = false;    
+        toggle.addEventListener("change", (e) => {
+            const isPerColor = e.target.checked;
+            ButterflyChartModule.toggleScale(!isPerColor);
+        });
+        console.log("Toggle event listener added");
+    } else {
+        console.warn("Toggle element not found in DOM");
+    }
     
     // Load the cleaned merged squirrel data first
     fetch("./data/squirrel_data.json")
@@ -68,4 +81,8 @@ function updateVisualizations() {
     ButterflyChartModule.updateButterflyChart(squirrelData);
     // updateMap(filteredData);
 }
+
+// Initialize the dashboard when the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", init);
+
 
