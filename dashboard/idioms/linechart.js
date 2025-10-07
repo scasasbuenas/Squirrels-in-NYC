@@ -183,7 +183,8 @@ const LineChartModule = (function() {
                 .on("mouseover", function(event, d) {
                     tooltip
                         .style("opacity", 1)
-                        .html(`${activity}: ${d.value}`);
+                        .html(`${activity}: ${d.value}<br/>Temperature: ${d.temperature}°F`);
+
                 })
                 .on("mousemove", function(event) {
                     const bounds = container.node().getBoundingClientRect();
