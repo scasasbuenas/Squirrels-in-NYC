@@ -122,7 +122,7 @@ const ButterflyChartModule = (function() {
 }
 
 function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, shiftTotals, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
-    const margin = { top: 30, right: 10, bottom: 40, left: 10 };  // smaller margins
+    const margin = { top: 30, right: 10, bottom: 50, left: 10 };  
     const chartWidth = totalWidth - margin.left - margin.right;
     const chartHeight = totalHeight - margin.top - margin.bottom;
 
@@ -134,8 +134,8 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
         .attr("x", totalWidth / 2)
         .attr("y", margin.top / 1.5)
         .attr("text-anchor", "middle")
-        .attr("font-size", "16px")
-        .attr("font-weight", "bold")
+        /* .attr("font-size", "16px")
+        .attr("font-weight", "bold") */
         .text(`${furColor} Squirrels`);
 
     const domainMax = useAbsoluteScale ? fixedMax : 75;
@@ -159,6 +159,23 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
 
     // The visual center of the chart
     const zeroX = chartWidth / 2;
+    const sideWidth = zeroX - labelOffset;
+
+    // two one-sided linear scales (0 on the inside, max at the edges)
+    const xLeft  = d3.scaleLinear().domain([0, domainMax]).range([sideWidth, 0]); // grows left
+    const xRight = d3.scaleLinear().domain([0, domainMax]).range([0, sideWidth]); // grows right
+
+    // left (AM) axis
+    chart.append("g")
+    .attr("class", "x-axis-left")
+    .attr("transform", `translate(${zeroX - labelOffset - sideWidth}, ${chartHeight})`)
+    .call(d3.axisBottom(xLeft).ticks(4).tickFormat(d => useAbsoluteScale ? d : d + "%"));
+
+    // right (PM) axis
+    chart.append("g")
+    .attr("class", "x-axis-right")
+    .attr("transform", `translate(${zeroX + labelOffset}, ${chartHeight})`)
+    .call(d3.axisBottom(xRight).ticks(4).tickFormat(d => useAbsoluteScale ? d : d + "%"));
 
 
     // Activity labels in the middle
@@ -207,13 +224,15 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
             const pmVal = useAbsoluteScale ? filteredRow.pm : (pmDen ? (filteredRow.pm / pmDen) * 100 : 0);
 
             // AM bar (left)
+            const amWidth = xLeft(0) - xLeft(amVal);           // positive width
+            const amX     = (zeroX - labelOffset) - amWidth;   // start at the divider and grow left
             chart.append("rect")
-                .attr("x", zeroX - labelOffset - Math.abs(xScale(-amVal) - xScale(0)))
-                .attr("y", y)
-                .attr("width", Math.abs(xScale(0) - xScale(-amVal)))
-                .attr("height", barHeight)
-                .attr("fill", colorScale(row.activity))
-                .style("opacity", baseOpacity)
+            .attr("x", amX)
+            .attr("y", y)
+            .attr("width", amWidth)
+            .attr("height", barHeight)
+            .attr("fill", colorScale(row.activity))
+            .style("opacity", baseOpacity)
                 .on("mouseover", function(e) { // use function() to access 'this'
                     const pct = useAbsoluteScale ? "" : ` (${amDen ? amVal.toFixed(1) + "%" : "—"})`;
                     tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
@@ -234,13 +253,15 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
                 });
 
             // PM bar (right)
+            const pmWidth = xRight(pmVal) - xRight(0);         // positive width
+            const pmX     = (zeroX + labelOffset);             // start at the divider and grow right
             chart.append("rect")
-                .attr("x", zeroX + labelOffset)
-                .attr("y", y)
-                .attr("width", Math.abs(xScale(pmVal) - xScale(0)))
-                .attr("height", barHeight)
-                .attr("fill", colorScale(row.activity))
-                .style("opacity", baseOpacity)
+            .attr("x", pmX)
+            .attr("y", y)
+            .attr("width", pmWidth)
+            .attr("height", barHeight)
+            .attr("fill", colorScale(row.activity))
+            .style("opacity", baseOpacity)
                 .on("mouseover", function(e) {
                     const pct = useAbsoluteScale ? "" : ` (${pmDen ? pmVal.toFixed(1) + "%" : "—"})`;
                     tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}${pct}`);
@@ -263,19 +284,19 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
         });
 
         // AM/PM labels
+        // AM and PM labels near the zero dividers
         chart.append("text")
-            .attr("x", zeroX - labelOffset)
-            .attr("y", chartHeight + 25)
-            .attr("text-anchor", "end")
-            .attr("fill", "black")
-            .text("AM");
+        .attr("x", zeroX - labelOffset - 5)  // small gap left of divider
+        .attr("y", chartHeight + 40)         // just below the x-axis
+        .attr("text-anchor", "end")
+        .text("AM");
 
         chart.append("text")
-            .attr("x", zeroX + labelOffset)
-            .attr("y", chartHeight + 25)
-            .attr("text-anchor", "start")
-            .attr("fill", "black")
-            .text("PM");
+        .attr("x", zeroX + labelOffset + 5)  // small gap right of divider
+        .attr("y", chartHeight + 40)
+        .attr("text-anchor", "start")
+        .text("PM");
+
     }
 
     function computeOriginalProcessed(data) {

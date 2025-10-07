@@ -318,7 +318,7 @@ body {
     color: #666;
     font-size: 2vw;
     background-image: url('../images/central-park.jpeg');
-    background-size: contain;
+    background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
 }
@@ -362,6 +362,7 @@ body {
     margin: 0;
     font-size: 20px;
     font-weight: bold;
+    white-space: nowrap;
 }
 
 .ButterflyChart {

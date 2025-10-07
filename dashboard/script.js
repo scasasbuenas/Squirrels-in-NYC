@@ -10,7 +10,9 @@ function init() {
     // Add event listener for the butterfly scale toggle
     const toggle = document.getElementById("butterfly-scale-toggle");  
     if (toggle) {
-        toggle.checked = false;    
+        toggle.checked = true;   
+        // Initialize the chart accordingly
+        ButterflyChartModule.toggleScale(false); 
         toggle.addEventListener("change", (e) => {
             const isPerColor = e.target.checked;
             ButterflyChartModule.toggleScale(!isPerColor);
