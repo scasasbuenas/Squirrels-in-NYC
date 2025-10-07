@@ -30,7 +30,6 @@ const ButterflyChartModule = (function() {
             originalProcessedByFur = computeOriginalProcessed(data);
             fixedMax = d3.max(Object.values(originalProcessedByFur).flat(), d => Math.max(d.am, d.pm)) || 1;
         }
-        
 
         // Apply filters
         const filteredData = applyNonBehaviorFilters(data);
@@ -90,35 +89,6 @@ const ButterflyChartModule = (function() {
 
             drawSingleButterflySection(group, original, filteredProcessed, shiftTotals, sectionWidth, height, fur, highlightedActivities, tooltip);
     });
-
-    // Legend
-/*     const legend = svg.append("g")
-        .attr("transform", `translate(${chartWidthAvailable + 10}, 20)`);
-
-    allActivities.forEach((activity, i) => {
-        const isHighlighted = highlightedActivities.includes(activity);
-        const hasAnyFilters = highlightedActivities.length < allActivities.length;
-
-        const legendRow = legend.append("g")
-            .attr("transform", `translate(0, ${i * 20})`)
-            .style("cursor", "pointer")
-            .on("click", () => {
-                FilterModule.toggleBehavior(activity);
-            });
-
-        legendRow.append("rect")
-            .attr("width", 15)
-            .attr("height", 15)
-            .attr("fill", colorScale(activity))
-            .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0);
-
-        legendRow.append("text")
-            .attr("x", 20)
-            .attr("y", 12)
-            .style("font-size", "12px")
-            .style("opacity", hasAnyFilters ? (isHighlighted ? 1.0 : 0.1) : 1.0)
-            .text(activity);
-    }); */
 }
 
 function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, shiftTotals, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
@@ -380,7 +350,6 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
             createButterflyChart(toUse, lastContainerSelector);
         }
     }
-
 
     return { createButterflyChart, updateButterflyChart, toggleScale };
 
