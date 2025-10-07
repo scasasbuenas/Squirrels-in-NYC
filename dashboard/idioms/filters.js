@@ -20,6 +20,9 @@ const FilterModule = (function() {
         
         // Setup checkbox event listeners
         setupCheckboxListeners();
+
+        // Setup reset filters button
+        setupResetButton();
         
         // Setup color filter listeners
         setupColorFilters();
@@ -99,6 +102,13 @@ const FilterModule = (function() {
         });
     }
 
+    function setupResetButton() {
+        d3.select("#reset-filters-btn").on("click", function() {
+            console.log("Reset Filters button clicked");
+            clearAllFilters();
+        });
+    }
+    
     // Setup color filter listeners
     function setupColorFilters() {
         d3.selectAll('.color-option').on('click', function() {
