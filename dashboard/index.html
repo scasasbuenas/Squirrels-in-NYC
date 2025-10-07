@@ -163,7 +163,19 @@
         <div class="bottom-charts">
           <!-- Butterfly Chart -->
           <div class="butterfly-section">
-            <h3>Squirrel Activity by Fur Color and Time of Day</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3>Squirrel Activity by Fur Color and Time of Day</h3>
+
+              <!--label & toggle -->
+               <div class="toggle-container">
+                <span class="toggle-label left">Absolute</span>
+                <label class="switch">
+                  <input type="checkbox" id="butterfly-scale-toggle" name="butterfly-scale-mode" autocomplete="off">
+                  <span class="slider round"></span>
+                </label>
+                <span class="toggle-label right">%</span>
+              </div>
+            </div>
             <div class="ButterflyChart"></div>
           </div>
           

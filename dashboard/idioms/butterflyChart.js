@@ -11,76 +11,85 @@ const ButterflyChartModule = (function() {
     let lastContainerSelector = null;
     let originalProcessedByFur = null; // Absolute counts for scale
     let fixedMax = 1; // Absolute max
+    let useAbsoluteScale = true;
+    let lastData = null;
 
     function createButterflyChart(data, containerSelector) {
-    lastContainerSelector = containerSelector;
-    const container = d3.select(containerSelector);
-    if (container.empty()) return console.warn("Container not found:", containerSelector);
+        data = data || lastData;            // <- use cached data if missing
+        if (!data) return;                  // <- nothing to draw yet
+        lastData = data;
+        lastContainerSelector = containerSelector;
+        const container = d3.select(containerSelector);
+        if (container.empty()) return console.warn("Container not found:", containerSelector);
 
-    container.selectAll("*").remove();
-    container.style("position", "relative");
+        container.selectAll("*").remove();
+        container.style("position", "relative");
 
-    // Compute absolute counts once for X scale
-    if (!originalProcessedByFur) {
-        originalProcessedByFur = computeOriginalProcessed(data);
-        fixedMax = d3.max(Object.values(originalProcessedByFur).flat(), d => Math.max(d.am, d.pm)) || 1;
-    }
-
-    // Apply filters
-    const filteredData = applyNonBehaviorFilters(data);
-    const highlightedActivities = getHighlightedActivities();
-
-    // Active fur colors from filters
-    let activeColorSet = new Set();
-    if (typeof FilterModule !== 'undefined') {
-        const current = FilterModule.getCurrentFilters();
-        if (current && current.colors && current.colors.length > 0) {
-            activeColorSet = new Set(current.colors); // lowercase keys
+        // Compute absolute counts once for X scale
+        if (!originalProcessedByFur) {
+            originalProcessedByFur = computeOriginalProcessed(data);
+            fixedMax = d3.max(Object.values(originalProcessedByFur).flat(), d => Math.max(d.am, d.pm)) || 1;
         }
-    }
+        
 
-    const filteredDataByFur = {};
-    furColors.forEach(fur => {
-        const furData = filteredData.filter(r => (r["Primary Fur Color"]||"").trim().toLowerCase() === fur.toLowerCase());
-        filteredDataByFur[fur] = processAMPMByActivity(furData, allActivities);
-    });
+        // Apply filters
+        const filteredData = applyNonBehaviorFilters(data);
+        const highlightedActivities = getHighlightedActivities();
 
-    // Tooltip
-    const tooltip = container.append("div")
-        .style("position", "absolute")
-        .style("background-color", "white")
-        .style("border", "1px solid black")
-        .style("padding", "5px 10px")
-        .style("border-radius", "4px")
-        .style("pointer-events", "none")
-        .style("opacity", 0);
+        // Active fur colors from filters
+        let activeColorSet = new Set();
+        if (typeof FilterModule !== 'undefined') {
+            const current = FilterModule.getCurrentFilters();
+            if (current && current.colors && current.colors.length > 0) {
+                activeColorSet = new Set(current.colors.map(c => String(c).toLowerCase())); // lowercase keys
+            }
+        }
 
-    const width = container.node().offsetWidth || 900;
-    const height = container.node().offsetHeight || 500;
+        const filteredDataByFur = {};
+        const totalsByFur = {};
+        furColors.forEach(fur => {
+            const furData = filteredData.filter(r => (r["Primary Fur Color"]||"").trim().toLowerCase() === fur.toLowerCase());
+            filteredDataByFur[fur] = processAMPMByActivity(furData, allActivities); // process counts
+            totalsByFur[fur] = computeShiftTotalsForFur(furData); // compute totals
+        });
 
-    const legendWidth = 150;          // Reserve this width for the legend
-    const chartWidthAvailable = width - legendWidth;
-    const sectionWidth = chartWidthAvailable / furColors.length;
+        // Tooltip
+        const tooltip = container.append("div")
+            .style("position", "absolute")
+            .style("background-color", "white")
+            .style("border", "1px solid black")
+            .style("padding", "5px 10px")
+            .style("border-radius", "4px")
+            .style("pointer-events", "none")
+            .style("opacity", 0);
 
-    const svg = container.append("svg")
-        .attr("width", width)
-        .attr("height", height);
+        const width = container.node().offsetWidth || 900;
+        const height = container.node().offsetHeight || 500;
 
-    // Draw each fur section
-    furColors.forEach((fur, i) => {
-        const original = originalProcessedByFur[fur];
-        const filteredProcessed = filteredDataByFur[fur];
-        if (!original) return;
+        const legendWidth = 150;          // Reserve this width for the legend
+        const chartWidthAvailable = width - legendWidth;
+        const sectionWidth = chartWidthAvailable / furColors.length;
 
-        // Dim section if fur color not active in filters
-        const isActiveColor = activeColorSet.size === 0 
-            || activeColorSet.has(fur.toLowerCase());
+        const svg = container.append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-        const group = svg.append("g")
-            .attr("transform", `translate(${i*sectionWidth},0)`)
-            .style("opacity", isActiveColor ? 1 : 0.15); // Dim if not active
+        // Draw each fur section
+        furColors.forEach((fur, i) => {
+            const original = originalProcessedByFur[fur];
+            const filteredProcessed = filteredDataByFur[fur];
+            const shiftTotals = totalsByFur[fur];
+            if (!original) return;
 
-        drawSingleButterflySection(group, original, filteredProcessed, sectionWidth, height, fur, highlightedActivities, tooltip);
+            // Dim section if fur color not active in filters
+            const isActiveColor = activeColorSet.size === 0 
+                || activeColorSet.has(fur.toLowerCase());
+
+            const group = svg.append("g")
+                .attr("transform", `translate(${i*sectionWidth},0)`)
+                .style("opacity", isActiveColor ? 1 : 0.15); // Dim if not active
+
+            drawSingleButterflySection(group, original, filteredProcessed, shiftTotals, sectionWidth, height, fur, highlightedActivities, tooltip);
     });
 
     // Legend
@@ -114,7 +123,7 @@ const ButterflyChartModule = (function() {
 }
 
 
-    function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
+    function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, shiftTotals, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
         const margin = { top: 30, right: 20, bottom: 40, left: 20 };
         const chartWidth = totalWidth - margin.left - margin.right;
         const chartHeight = totalHeight - margin.top - margin.bottom;
@@ -131,6 +140,9 @@ const ButterflyChartModule = (function() {
             .attr("font-weight", "bold")
             .text(`${furColor} Squirrels`);
 
+        // Determine max for X scale
+        const domainMax = useAbsoluteScale ? fixedMax : 100;
+
         // Scales
         const yScale = d3.scaleBand()
             .domain(allActivities)
@@ -139,7 +151,7 @@ const ButterflyChartModule = (function() {
             .paddingOuter(0.15);
 
         const xScale = d3.scaleLinear()
-            .domain([-fixedMax, fixedMax]) // absolute scale
+            .domain([-domainMax, domainMax]) // absolute scale or percentage based on toggle
             .range([0, chartWidth]);
 
         const zeroX = xScale(0);
@@ -155,42 +167,55 @@ const ButterflyChartModule = (function() {
         const hasAnyBehaviorFilters = highlightedActivities.length < allActivities.length;
         const barHeight = Math.max(10, yScale.bandwidth()/1.6);
 
+        const amDen = Math.max(shiftTotals?.am || 0, 0);
+        const pmDen = Math.max(shiftTotals?.pm || 0, 0);
+
         // Bars
         originalProcessed.forEach((row, idx) => {
             const y = yScale(row.activity);
-
-            // Behavior filter affects only opacity
             const isHighlighted = highlightedActivities.includes(row.activity);
             const baseOpacity = hasAnyBehaviorFilters ? (isHighlighted ? 0.95 : 0.35) : 0.85;
 
-            // Bar lengths come from filtered counts (dog/age filters)
             const filteredRow = filteredProcessed ? filteredProcessed[idx] : { am: 0, pm: 0 };
 
-            // AM bar
-            chart.append("rect")
-                .attr("x", Math.min(zeroX, xScale(-filteredRow.am)))
-                .attr("y", y)
-                .attr("width", Math.abs(xScale(0) - xScale(-filteredRow.am)))
-                .attr("height", barHeight)
-                .attr("fill", colorScale(row.activity))
-                .style("opacity", baseOpacity)
-                .on("mouseover", e => tooltip.style("opacity",1)
-                    .html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}`))
-                .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-                .on("mouseleave", () => tooltip.style("opacity",0));
+            // values (either counts or percentages)
+            const amVal = useAbsoluteScale
+            ? filteredRow.am
+            : (amDen ? (filteredRow.am / amDen) * 100 : 0);
 
-            // PM bar
+            const pmVal = useAbsoluteScale
+            ? filteredRow.pm
+            : (pmDen ? (filteredRow.pm / pmDen) * 100 : 0);
+
+            // AM bar (left)
             chart.append("rect")
-                .attr("x", Math.min(zeroX, xScale(filteredRow.pm)))
-                .attr("y", y)
-                .attr("width", Math.abs(xScale(0) - xScale(filteredRow.pm)))
-                .attr("height", barHeight)
-                .attr("fill", colorScale(row.activity))
-                .style("opacity", baseOpacity)
-                .on("mouseover", e => tooltip.style("opacity",1)
-                    .html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}`))
-                .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-                .on("mouseleave", () => tooltip.style("opacity",0));
+            .attr("x", Math.min(zeroX, xScale(-amVal)))
+            .attr("y", y)
+            .attr("width", Math.abs(xScale(0) - xScale(-amVal)))
+            .attr("height", barHeight)
+            .attr("fill", colorScale(row.activity))
+            .style("opacity", baseOpacity)
+            .on("mouseover", e => {
+                const pct = useAbsoluteScale ? "" : ` (${amDen ? (amVal).toFixed(1) + "%" : "—"})`;
+                tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
+            })
+            .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
+            .on("mouseleave", () => tooltip.style("opacity",0));
+
+            // PM bar (right)
+            chart.append("rect")
+            .attr("x", Math.min(zeroX, xScale(pmVal)))
+            .attr("y", y)
+            .attr("width", Math.abs(xScale(0) - xScale(pmVal)))
+            .attr("height", barHeight)
+            .attr("fill", colorScale(row.activity))
+            .style("opacity", baseOpacity)
+            .on("mouseover", e => {
+                const pct = useAbsoluteScale ? "" : ` (${pmDen ? (pmVal).toFixed(1) + "%" : "—"})`;
+                tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}${pct}`);
+            })
+            .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
+            .on("mouseleave", () => tooltip.style("opacity",0));
         });
 
         // AM/PM labels
@@ -233,6 +258,17 @@ const ButterflyChartModule = (function() {
         return Object.values(counts);
     }
 
+    // Compute total number of sightings per shift for a given fur color
+    function computeShiftTotalsForFur(furData) {
+        let am = 0, pm = 0;
+        furData.forEach(r => {
+            const s = String(r['Shift']).trim().toUpperCase();
+            if (s === 'AM') am++;
+            else if (s === 'PM') pm++;
+        });
+        return { am, pm };
+    }
+
     function getHighlightedActivities() {
         if (typeof FilterModule !== 'undefined') {
             const behaviorFilters = (FilterModule.getCurrentFilters().behaviors || []);
@@ -263,11 +299,25 @@ const ButterflyChartModule = (function() {
         tooltipSel.style("left", `${mx+12}px`).style("top", `${my+12}px`);
     }
 
-    function updateButterflyChart(data) {
-        if(lastContainerSelector) createButterflyChart(data, lastContainerSelector);
+    // Toggle between absolute counts and percentage scale
+    function toggleScale(isChecked) {
+        if (typeof isChecked === 'boolean') {
+            useAbsoluteScale = isChecked;
+        } else {
+            useAbsoluteScale = !useAbsoluteScale; // fallback if called without arg
+        }
+        updateButterflyChart(); // no args → uses lastData
     }
 
-    return { createButterflyChart, updateButterflyChart };
+    function updateButterflyChart(data) {
+        const toUse = (data && data.length) ? data : lastData; // <- fallback
+        if (lastContainerSelector && toUse) {
+            createButterflyChart(toUse, lastContainerSelector);
+        }
+    }
+
+
+    return { createButterflyChart, updateButterflyChart, toggleScale };
 
 })();
 window.ButterflyChartModule = ButterflyChartModule;
