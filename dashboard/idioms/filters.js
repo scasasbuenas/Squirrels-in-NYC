@@ -108,7 +108,7 @@ const FilterModule = (function() {
             clearAllFilters();
         });
     }
-    
+
     // Setup color filter listeners
     function setupColorFilters() {
         d3.selectAll('.color-option').on('click', function() {
@@ -236,8 +236,10 @@ const FilterModule = (function() {
         activeFilters.colors.clear();
         activeFilters.dogs = false;
         
-        // Uncheck all checkboxes
-        d3.selectAll('input[type="checkbox"]').property('checked', false);
+        // Uncheck all checkboxes except the butterfly scale toggle
+        d3.selectAll('input[type="checkbox"]').filter(function() {
+            return this.id !== 'butterfly-scale-toggle';
+        }).property('checked', false);
         
         // Remove active classes
         d3.selectAll('.filter-btn, .color-option, .dog-toggle').classed('active', false);

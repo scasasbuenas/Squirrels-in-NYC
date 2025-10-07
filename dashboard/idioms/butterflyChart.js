@@ -122,7 +122,6 @@ const ButterflyChartModule = (function() {
     });
 }
 
-
     function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcessed, shiftTotals, totalWidth, totalHeight, furColor, highlightedActivities, tooltip) {
         const margin = { top: 30, right: 20, bottom: 40, left: 20 };
         const chartWidth = totalWidth - margin.left - margin.right;
@@ -151,7 +150,7 @@ const ButterflyChartModule = (function() {
             .paddingOuter(0.15);
 
         const xScale = d3.scaleLinear()
-            .domain([-domainMax, domainMax]) // absolute scale or percentage based on toggle
+            .domain([-domainMax, domainMax])
             .range([0, chartWidth]);
 
         const zeroX = xScale(0);
@@ -167,10 +166,10 @@ const ButterflyChartModule = (function() {
         const hasAnyBehaviorFilters = highlightedActivities.length < allActivities.length;
         const barHeight = Math.max(10, yScale.bandwidth()/1.6);
 
-        const amDen = Math.max(shiftTotals?.am || 0, 0);
-        const pmDen = Math.max(shiftTotals?.pm || 0, 0);
+        // Precompute AM/PM denominators for percentages if needed
+        const amDen = useAbsoluteScale ? 1 : Math.max(shiftTotals?.am || 0, 0);
+        const pmDen = useAbsoluteScale ? 1 : Math.max(shiftTotals?.pm || 0, 0);
 
-        // Bars
         originalProcessed.forEach((row, idx) => {
             const y = yScale(row.activity);
             const isHighlighted = highlightedActivities.includes(row.activity);
@@ -178,44 +177,39 @@ const ButterflyChartModule = (function() {
 
             const filteredRow = filteredProcessed ? filteredProcessed[idx] : { am: 0, pm: 0 };
 
-            // values (either counts or percentages)
-            const amVal = useAbsoluteScale
-            ? filteredRow.am
-            : (amDen ? (filteredRow.am / amDen) * 100 : 0);
+            // Compute values once (absolute or percentage)
+            const amVal = useAbsoluteScale ? filteredRow.am : (amDen ? (filteredRow.am / amDen) * 100 : 0);
+            const pmVal = useAbsoluteScale ? filteredRow.pm : (pmDen ? (filteredRow.pm / pmDen) * 100 : 0);
 
-            const pmVal = useAbsoluteScale
-            ? filteredRow.pm
-            : (pmDen ? (filteredRow.pm / pmDen) * 100 : 0);
-
-            // AM bar (left)
+            // AM bar
             chart.append("rect")
-            .attr("x", Math.min(zeroX, xScale(-amVal)))
-            .attr("y", y)
-            .attr("width", Math.abs(xScale(0) - xScale(-amVal)))
-            .attr("height", barHeight)
-            .attr("fill", colorScale(row.activity))
-            .style("opacity", baseOpacity)
-            .on("mouseover", e => {
-                const pct = useAbsoluteScale ? "" : ` (${amDen ? (amVal).toFixed(1) + "%" : "—"})`;
-                tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
-            })
-            .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-            .on("mouseleave", () => tooltip.style("opacity",0));
+                .attr("x", Math.min(zeroX, xScale(-amVal)))
+                .attr("y", y)
+                .attr("width", Math.abs(xScale(0) - xScale(-amVal)))
+                .attr("height", barHeight)
+                .attr("fill", colorScale(row.activity))
+                .style("opacity", baseOpacity)
+                .on("mouseover", e => {
+                    const pct = useAbsoluteScale ? "" : ` (${amVal.toFixed(1)}%)`;
+                    tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
+                })
+                .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
+                .on("mouseleave", () => tooltip.style("opacity",0));
 
-            // PM bar (right)
+            // PM bar
             chart.append("rect")
-            .attr("x", Math.min(zeroX, xScale(pmVal)))
-            .attr("y", y)
-            .attr("width", Math.abs(xScale(0) - xScale(pmVal)))
-            .attr("height", barHeight)
-            .attr("fill", colorScale(row.activity))
-            .style("opacity", baseOpacity)
-            .on("mouseover", e => {
-                const pct = useAbsoluteScale ? "" : ` (${pmDen ? (pmVal).toFixed(1) + "%" : "—"})`;
-                tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}${pct}`);
-            })
-            .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-            .on("mouseleave", () => tooltip.style("opacity",0));
+                .attr("x", Math.min(zeroX, xScale(pmVal)))
+                .attr("y", y)
+                .attr("width", Math.abs(xScale(0) - xScale(pmVal)))
+                .attr("height", barHeight)
+                .attr("fill", colorScale(row.activity))
+                .style("opacity", baseOpacity)
+                .on("mouseover", e => {
+                    const pct = useAbsoluteScale ? "" : ` (${pmVal.toFixed(1)}%)`;
+                    tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}${pct}`);
+                })
+                .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
+                .on("mouseleave", () => tooltip.style("opacity",0));
         });
 
         // AM/PM labels
