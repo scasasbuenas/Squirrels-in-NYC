@@ -138,7 +138,7 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
         .attr("font-weight", "bold")
         .text(`${furColor} Squirrels`);
 
-    const domainMax = useAbsoluteScale ? fixedMax : 70;
+    const domainMax = useAbsoluteScale ? fixedMax : 75;
 
     const yScale = d3.scaleBand()
         .domain(allActivities)
