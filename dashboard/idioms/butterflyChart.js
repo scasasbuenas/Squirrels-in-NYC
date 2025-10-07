@@ -214,12 +214,24 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
                 .attr("height", barHeight)
                 .attr("fill", colorScale(row.activity))
                 .style("opacity", baseOpacity)
-                .on("mouseover", e => {
+                .on("mouseover", function(e) { // use function() to access 'this'
                     const pct = useAbsoluteScale ? "" : ` (${amDen ? amVal.toFixed(1) + "%" : "—"})`;
                     tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
+                    d3.select(this)
+                    .style("cursor", "pointer")
+                    .style("stroke", "#333")       // add stroke color
+                    .style("stroke-width", "1.5px");
                 })
                 .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-                .on("mouseleave", () => tooltip.style("opacity",0));
+                .on("mouseleave", function() {
+                    tooltip.style("opacity",0);
+                    d3.select(this)
+                    .style("stroke-width", null)  // remove stroke
+                    .style("stroke", null);
+                })
+                .on("click", () => {
+                    FilterModule.toggleBehavior(row.activity);
+                });
 
             // PM bar (right)
             chart.append("rect")
@@ -229,12 +241,25 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
                 .attr("height", barHeight)
                 .attr("fill", colorScale(row.activity))
                 .style("opacity", baseOpacity)
-                .on("mouseover", e => {
+                .on("mouseover", function(e) {
                     const pct = useAbsoluteScale ? "" : ` (${pmDen ? pmVal.toFixed(1) + "%" : "—"})`;
                     tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>PM: ${filteredRow.pm}${pct}`);
+                    d3.select(this)
+                    .style("cursor", "pointer")
+                    .style("stroke", "#333")
+                    .style("stroke-width", "1.5px");
                 })
                 .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-                .on("mouseleave", () => tooltip.style("opacity",0));
+                .on("mouseleave", function() {
+                    tooltip.style("opacity",0);
+                    d3.select(this)
+                    .style("stroke-width", null)
+                    .style("stroke", null);
+                })
+                .on("click", () => {
+                    FilterModule.toggleBehavior(row.activity);
+                });
+
         });
 
         // AM/PM labels
