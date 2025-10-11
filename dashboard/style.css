@@ -339,6 +339,16 @@ body {
     padding: 0;
 }
 
+/* MapLibre GL specific styles */
+.Map .maplibregl-canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.Map .maplibregl-control-container {
+    position: absolute;
+}
+
 /* ------- Bottom Charts Section -------- */
 .bottom-charts {
     display: grid;
