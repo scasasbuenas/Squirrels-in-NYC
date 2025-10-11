@@ -164,7 +164,11 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
                 ? (highlightedActivities.includes(d) ? 1 : 0.2)
                 : 1
         )
-        .text(d => d);
+        .text(d => d)
+        .on("click", function(event, d) {
+            FilterModule.toggleBehavior(d);
+        });
+
 
     // Left line (start of AM)
     chart.append("line")
@@ -203,24 +207,24 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
             .attr("height", barHeight)
             .attr("fill", colorScale(row.activity))
             .style("opacity", baseOpacity)
-                .on("mouseover", function(e) { // use function() to access 'this'
-                    const pct = useAbsoluteScale ? "" : ` (${amDen ? amVal.toFixed(1) + "%" : "—"})`;
-                    tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
-                    d3.select(this)
-                    .style("cursor", "pointer")
-                    .style("stroke", "#333")       // add stroke color
-                    .style("stroke-width", "1.5px");
-                })
-                .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
-                .on("mouseleave", function() {
-                    tooltip.style("opacity",0);
-                    d3.select(this)
-                    .style("stroke-width", null)  // remove stroke
-                    .style("stroke", null);
-                })
-                .on("click", () => {
-                    FilterModule.toggleBehavior(row.activity);
-                });
+            .on("mouseover", function(e) { // use function() to access 'this'
+                const pct = useAbsoluteScale ? "" : ` (${amDen ? amVal.toFixed(1) + "%" : "—"})`;
+                tooltip.style("opacity",1).html(`<strong>${row.activity}</strong><br/>AM: ${filteredRow.am}${pct}`);
+                d3.select(this)
+                .style("cursor", "pointer")
+                .style("stroke", "#333")       // add stroke color
+                .style("stroke-width", "1.5px");
+            })
+            .on("mousemove", e => positionTooltip(e, svgGroup.node().parentNode, tooltip))
+            .on("mouseleave", function() {
+                tooltip.style("opacity",0);
+                d3.select(this)
+                .style("stroke-width", null)  // remove stroke
+                .style("stroke", null);
+            })
+            .on("click", () => {
+                FilterModule.toggleBehavior(row.activity);
+            });
 
             // PM bar (right)
             const pmWidth = xRight(pmVal) - xRight(0);         // positive width
