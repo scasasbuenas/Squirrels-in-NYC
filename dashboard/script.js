@@ -55,7 +55,7 @@ function init() {
             // Create visualizations
             LineChartModule.createLineChart(squirrelData, ".LineChart");
             ButterflyChartModule.createButterflyChart(squirrelData, ".ButterflyChart");
-            // createMap(filteredData, ".Map");
+            createMap(filteredData, ".Map");
         })
         .catch(function(error) {
             console.error("Error loading data:", error);
@@ -81,7 +81,7 @@ function updateVisualizations() {
     
     // Update other visualizations with filtered data
     ButterflyChartModule.updateButterflyChart(squirrelData);
-    // updateMap(filteredData);
+    updateMap(filteredData);
 }
 
 // Initialize the dashboard when the DOM is fully loaded

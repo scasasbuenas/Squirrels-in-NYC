@@ -24,7 +24,7 @@ def clean_squirrel_dataset():
 
     # Step 1: Select only the required columns
     columns_to_keep = [
-        'Hectare', 'Shift', 'Date', 'Age', 'Primary Fur Color', 
+        'X', 'Y', 'Unique Squirrel ID', 'Hectare', 'Shift', 'Date', 'Age', 'Primary Fur Color', 
         'Running', 'Chasing', 'Climbing', 'Eating', 'Foraging', 
         'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 
         'Indifferent', 'Runs from'
@@ -301,7 +301,7 @@ def merge_datasets():
     column_order = []
     
     # Location and temporal columns first
-    base_columns = ['Hectare', 'Shift', 'Date']
+    base_columns = ['X', 'Y', 'Unique Squirrel ID', 'Hectare', 'Shift', 'Date']
     for col in base_columns:
         if col in merged_df.columns:
             column_order.append(col)
@@ -329,7 +329,7 @@ def merge_datasets():
     print("="*50)
     print(f"📊 Final shape: {merged_df.shape[0]} rows × {merged_df.shape[1]} columns")
     print(f"\nColumn breakdown:")
-    print(f"🔹 Location/Temporal: Hectare, Shift, Date")  
+    print(f"🔹 Location/Temporal: X, Y, Unique Squirrel ID, Hectare, Shift, Date")  
     print(f"🐿️  Squirrel behavioral: {len(squirrel_columns)} columns")
     print(f"🌳 Hectare environmental: {len(hectare_columns)} columns")
     
