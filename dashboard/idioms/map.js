@@ -39,13 +39,13 @@ const MapModule = (function() {
             .attr("height", "100%")
             .node();
 
-        // Your geo bounding box (in lon, lat)
+        // Geo bounding box (in lon, lat)
         const geoTL = [-73.981807, 40.768107];
         const geoTR = [-73.958198, 40.800565];
         const geoBL = [-73.973071, 40.764324];
         const geoBR = [-73.949338, 40.796945];
 
-        // The rectangle you want to map it to (screen space)
+        // The rectangle we want to map it to (screen space)
         const screenTL = [227, 7];
         const screenTR = [1565, 7];
         const screenBL = [227, 280];
