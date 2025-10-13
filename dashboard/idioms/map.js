@@ -3,18 +3,6 @@ const MapModule = (function() {
     let lastContainerSelector = null;
     let lastData = null;
     let tooltip = null;
-    // Central Park bounding box
-    const pxTL = [0, 0];             // top-left
-    const pxTR = [imgWidth, 0];      // top-right
-    const pxBL = [0, imgHeight];     // bottom-left
-    const pxBR = [imgWidth, imgHeight]; // bottom-right
-
-    // Corresponding geographic coordinates (lon, lat)
-    const geoTL = [-73.981807, 40.768107];
-    const geoTR = [-73.958198, 40.800565];
-    const geoBL = [-73.973071, 40.764324];
-    const geoBR = [-73.949338, 40.796945];
-
 
     const furColors = {
         gray: "#808080",
@@ -57,6 +45,19 @@ const MapModule = (function() {
         const imgY = bbox.y;
         const imgWidth = bbox.width;
         const imgHeight = bbox.height;
+
+        // Central Park bounding box
+        const pxTL = [0, 0];             // top-left
+        const pxTR = [imgWidth, 0];      // top-right
+        const pxBL = [0, imgHeight];     // bottom-left
+        const pxBR = [imgWidth, imgHeight]; // bottom-right
+
+        // Corresponding geographic coordinates (lon, lat)
+        const geoTL = [-73.981807, 40.768107];
+        const geoTR = [-73.958198, 40.800565];
+        const geoBL = [-73.973071, 40.764324];
+        const geoBR = [-73.949338, 40.796945];
+
 
         function geoToPixelBilinear(lon, lat) {
             // Interpolate along top and bottom edges
@@ -138,25 +139,7 @@ const MapModule = (function() {
 
         console.log("✅ Map rendered with corrected bounding box scaling.");
     }
-/* 
-    function getColorByFur(fur) {
-        return furColors[(fur || "").toLowerCase()] || "#999999";
-    }
 
-    function geoToPixel(lon, lat) {
-        const x = ((lon - lonMin) / (lonMax - lonMin)) * imgWidth;
-        const y = ((latMax - lat) / (latMax - latMin)) * imgHeight; // flip Y
-        return [x, y];
-    }
-    function moveTooltip(event) {
-        tooltip.style("top", (event.pageY + 10) + "px")
-            .style("left", (event.pageX + 10) + "px");
-    }
-
-    function hideTooltip() {
-        tooltip.style("opacity", 0);
-    }
- */
     function updateMap(data) {
         const toUse = data || lastData;
         if (lastContainerSelector && toUse) {
@@ -165,7 +148,6 @@ const MapModule = (function() {
     }
 
     
-
     return {
         createMap,
         updateMap
