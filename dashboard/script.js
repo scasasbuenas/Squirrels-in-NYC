@@ -55,11 +55,22 @@ function init() {
             // Create visualizations
             LineChartModule.createLineChart(squirrelData, ".LineChart");
             ButterflyChartModule.createButterflyChart(squirrelData, ".ButterflyChart");
-            createMap(filteredData, ".Map");
         })
         .catch(function(error) {
             console.error("Error loading data:", error);
         });
+    fetch("./data/squirrels.geojson")
+        .then(res => res.text())
+        .then(text => {
+            // Replace NaN or Infinity (any standalone) with null
+            const cleanedText = text.replace(/\b(NaN|Infinity|-Infinity)\b/g, 'null');
+            return JSON.parse(cleanedText);
+        })
+        .then(geojsonData => {
+            MapModule.createMap(geojsonData, ".Map"); // initialize map
+        })
+        .catch(err => console.error("Error loading GeoJSON:", err));
+
 }
 
 function onFiltersChanged() {
@@ -81,7 +92,6 @@ function updateVisualizations() {
     
     // Update other visualizations with filtered data
     ButterflyChartModule.updateButterflyChart(squirrelData);
-    updateMap(filteredData);
 }
 
 // Initialize the dashboard when the DOM is fully loaded

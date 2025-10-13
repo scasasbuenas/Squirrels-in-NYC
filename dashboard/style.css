@@ -312,41 +312,8 @@ body {
     min-height: 160px;
     height: 30vh;
     background-color: #f0f0f0;
-    /* Remove background image when map is active */
     position: relative;
     overflow: hidden;
-}
-
-/* Default state - show background image when no map */
-.Map:empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #666;
-    font-size: 2vw;
-    background-image: url('../images/central-park.jpeg');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-/* When map is loaded, ensure it fills the container */
-.Map #squirrel-map {
-    width: 100%;
-    height: 100%;
-    border: none;
-    margin: 0;
-    padding: 0;
-}
-
-/* MapLibre GL specific styles */
-.Map .maplibregl-canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-.Map .maplibregl-control-container {
-    position: absolute;
 }
 
 /* ------- Bottom Charts Section -------- */
