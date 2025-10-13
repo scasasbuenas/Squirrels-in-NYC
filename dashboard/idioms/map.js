@@ -34,6 +34,7 @@ const MapModule = (function() {
 
         const imgNode = svg.append("image")
             .attr("href", "../images/central_park_overlay.jpg")
+            .attr("opacity", 0.75)
             .attr("width", "100%")
             .attr("height", "100%")
             .node();
@@ -45,10 +46,10 @@ const MapModule = (function() {
         const geoBR = [-73.949338, 40.796945];
 
         // The rectangle you want to map it to (screen space)
-        const screenTL = [223, 7];
-        const screenTR = [1571, 7];
-        const screenBL = [223, 280];
-        const screenBR = [1571, 280];
+        const screenTL = [227, 7];
+        const screenTR = [1565, 7];
+        const screenBL = [227, 280];
+        const screenBR = [1565, 280];
 
         // Given a lon/lat point, map it to screen coordinates
         function geoToScreen(lon, lat) {
@@ -102,8 +103,10 @@ const MapModule = (function() {
         }
 
         function moveTooltip(event) {
-            tooltip.style("top", (event.pageY + 10) + "px")
-                .style("left", (event.pageX + 10) + "px");
+            const [x, y] = d3.pointer(event, container.node());
+            tooltip
+                .style("left", (x + 10) + "px")
+                .style("top", (y + 10) + "px");
         }
 
         function hideTooltip() {
