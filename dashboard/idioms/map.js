@@ -2,7 +2,6 @@ const MapModule = (function() {
 
     let lastContainerSelector = null;
     let lastData = null;
-    let tooltip = null;
 
     const furColors = {
         gray: "#808080",
