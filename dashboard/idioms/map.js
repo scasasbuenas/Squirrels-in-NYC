@@ -34,52 +34,40 @@ const MapModule = (function() {
 
         const imgNode = svg.append("image")
             .attr("href", "../images/central_park_overlay.jpg")
-            .attr("width", width)
-            .attr("height", height)
+            .attr("width", "100%")
+            .attr("height", "100%")
             .node();
 
-        // Get actual image position in SVG
-        const bbox = imgNode.getBBox(); // gives x, y, width, height of the image in SVG
-
-        const imgX = bbox.x;
-        const imgY = bbox.y;
-        const imgWidth = bbox.width;
-        const imgHeight = bbox.height;
-
-        // Central Park bounding box
-        const pxTL = [0, 0];             // top-left
-        const pxTR = [imgWidth, 0];      // top-right
-        const pxBL = [0, imgHeight];     // bottom-left
-        const pxBR = [imgWidth, imgHeight]; // bottom-right
-
-        // Corresponding geographic coordinates (lon, lat)
+        // Your geo bounding box (in lon, lat)
         const geoTL = [-73.981807, 40.768107];
         const geoTR = [-73.958198, 40.800565];
         const geoBL = [-73.973071, 40.764324];
         const geoBR = [-73.949338, 40.796945];
 
+        // The rectangle you want to map it to (screen space)
+        const screenTL = [223, 7];
+        const screenTR = [1571, 7];
+        const screenBL = [223, 280];
+        const screenBR = [1571, 280];
 
-        function geoToPixelBilinear(lon, lat) {
-            // Interpolate along top and bottom edges
-            const tx = (lon - geoTL[0]) / (geoTR[0] - geoTL[0]); // fraction along top edge
-            const bx = (lon - geoBL[0]) / (geoBR[0] - geoBL[0]); // fraction along bottom edge
-
-            // Interpolate pixel X along top and bottom
-            const xTop = pxTL[0] + tx * (pxTR[0] - pxTL[0]);
-            const xBottom = pxBL[0] + bx * (pxBR[0] - pxBL[0]);
-
-            // Interpolate along left and right edges
-            const ly = (lat - geoBL[1]) / (geoTL[1] - geoBL[1]); // fraction along left edge
-            const ry = (lat - geoBR[1]) / (geoTR[1] - geoBR[1]); // fraction along right edge
-
-            // Interpolate pixel Y along left and right
-            const yLeft = pxBL[1] + ly * (pxTL[1] - pxBL[1]);
-            const yRight = pxBR[1] + ry * (pxTR[1] - pxBR[1]);
-
-            // Average X and Y
-            const x = xTop * (1 - ly) + xBottom * ly;
-            const y = yLeft * (1 - tx) + yRight * tx;
-
+        // Given a lon/lat point, map it to screen coordinates
+        function geoToScreen(lon, lat) {
+            // Step 1: represent as vectors relative to TL corner
+            const geoVecX = [geoTR[0] - geoTL[0], geoTR[1] - geoTL[1]];
+            const geoVecY = [geoBL[0] - geoTL[0], geoBL[1] - geoTL[1]];
+            
+            // Step 2: solve for coefficients (a,b) s.t. point = TL + a*vecX + b*vecY
+            const dx = lon - geoTL[0];
+            const dy = lat - geoTL[1];
+            
+            const det = geoVecX[0]*geoVecY[1] - geoVecY[0]*geoVecX[1];
+            const a = (dx*geoVecY[1] - dy*geoVecY[0]) / det;
+            const b = (dy*geoVecX[0] - dx*geoVecX[1]) / det;
+            
+            // Step 3: map (a,b) to screen rectangle
+            const x = screenTL[0] + a * (screenTR[0] - screenTL[0]) + b * (screenBL[0] - screenTL[0]);
+            const y = screenTL[1] + a * (screenTR[1] - screenTL[1]) + b * (screenBL[1] - screenTL[1]);
+            
             return [x, y];
         }
 
@@ -127,15 +115,19 @@ const MapModule = (function() {
             .data(geojsonData.features)
             .enter()
             .append("circle")
-            .attr("cx", d => geoToPixelBilinear(d.geometry.coordinates[0], d.geometry.coordinates[1])[0])
-            .attr("cy", d => geoToPixelBilinear(d.geometry.coordinates[0], d.geometry.coordinates[1])[1])
-            .attr("r", 2)
+            .attr("cx", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[0])
+            .attr("cy", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[1])
+            .attr("r", 3)
             .attr("fill", d => getColorByFur(d.properties.furColor))
             .attr("stroke", "#000")
             .attr("stroke-width", 0.3)
             .on("mouseover", showTooltip)
             .on("mousemove", moveTooltip)
-            .on("mouseout", hideTooltip);
+            .on("mouseout", hideTooltip)
+            .each(d => {
+                const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
+                console.log(d.geometry.coordinates[0], d.geometry.coordinates[1], "=>", x, y);
+            });
 
         console.log("✅ Map rendered with corrected bounding box scaling.");
     }
