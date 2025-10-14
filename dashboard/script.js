@@ -1,6 +1,7 @@
 // Global variables
 let squirrelData = [];
 let filteredData = [];
+let geojsonData = null;
 
 function init() {
 
@@ -66,7 +67,8 @@ function init() {
             const cleanedText = text.replace(/\b(NaN|Infinity|-Infinity)\b/g, 'null');
             return JSON.parse(cleanedText);
         })
-        .then(geojsonData => {
+        .then(geodata => {
+            geojsonData = geodata; // store globally
             MapModule.createMap(geojsonData, ".Map"); // initialize map
         })
         .catch(err => console.error("Error loading GeoJSON:", err));
@@ -92,6 +94,8 @@ function updateVisualizations() {
     
     // Update other visualizations with filtered data
     ButterflyChartModule.updateButterflyChart(squirrelData);
+
+    MapModule.updateMap(geojsonData);
 }
 
 // Initialize the dashboard when the DOM is fully loaded

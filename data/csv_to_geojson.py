@@ -2,7 +2,7 @@ import json
 import pandas as pd
 
 # Load cleaned squirrel data
-df = pd.read_csv("cleaned_data/cleaned_squirrel_data.csv")
+df = pd.read_csv("cleaned_data/merged_squirrel_hectare_data.csv", sep=';')  # or '\t'
 
 features = []
 for _, row in df.iterrows():
@@ -21,7 +21,15 @@ for _, row in df.iterrows():
             "chasing": row["Chasing"],
             "climbing": row["Climbing"],
             "eating": row["Eating"],
-            "foraging": row["Foraging"]
+            "foraging": row["Foraging"],
+            "kuks": row["Kuks"],
+            "quaas": row["Quaas"],
+            "tail flags": row ["Tail flags"],
+            "tail twitches": row ["Tail twitches"],
+            "approaches": row["Approaches"],
+            "indifferent": row["Indifferent"],
+            "runs from": row["Runs from"],
+            "dogs": bool(row["Dogs"]) 
         }
     }
     features.append(feature)

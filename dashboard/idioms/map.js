@@ -2,6 +2,8 @@ const MapModule = (function() {
 
     let lastContainerSelector = null;
     let lastData = null;
+    let currentTransform = d3.zoomIdentity;
+    let zoom = null;
 
     const furColors = {
         gray: "#808080",
@@ -9,92 +11,116 @@ const MapModule = (function() {
         cinnamon: "#d2691e"
     };
 
-    function createMap(geojsonData, containerSelector = ".Map") {
-        if (!geojsonData || !geojsonData.features) {
-            console.warn("Invalid GeoJSON data");
-            return;
-        }
+    const allActivities = [
+        'running', 'climbing', 'chasing', 'eating', 'foraging',
+        'kuks', 'quaas', 'tail flags', 'tail twitches',
+        'approaches', 'indifferent', 'runs from'
+    ];
+
+    const colorScale = d3.scaleOrdinal()
+        .domain(allActivities)
+        .range(['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
+
+    const baseRadius = 4.2;
+    const baseStroke = 0.3;
+
+    function getColorByFur(fur) {
+        return furColors[fur?.toLowerCase()] || "#999999";
+    }
+
+    function createMap(originalData, containerSelector = ".Map") {
+        if (!originalData) return;
+
+        lastContainerSelector = containerSelector;
+        lastData = originalData;
 
         const container = d3.select(containerSelector);
-        if (container.empty()) {
-            console.warn("Container not found:", containerSelector);
-            return;
-        }
-
-        container.selectAll("*").remove();
+        if (container.empty()) return;
         container.style("position", "relative");
 
         const width = container.node().offsetWidth || 800;
         const height = container.node().offsetHeight || 600;
 
-        const svg = container.append("svg")
-            .attr("width", width)
-            .attr("height", height);
+        // Create SVG only once
+        let svg = container.select("svg");
+        if (svg.empty()) {
+            svg = container.append("svg")
+                .attr("width", width)
+                .attr("height", height);
 
-        const mapGroup = svg.append("g");
-        
-        mapGroup.append("image")
-            .attr("href", "../images/central_park_overlay.jpg")
-            .attr("opacity", 0.75)
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .node();
+            const mapGroup = svg.append("g").attr("class", "map-group");
 
+            // Background image
+            mapGroup.append("image")
+                .attr("href", "../images/central_park_overlay.jpg")
+                .attr("opacity", 0.75)
+                .attr("width", "100%")
+                .attr("height", "100%");
 
-        // Geo bounding box (in lon, lat)
+            // Initialize zoom
+            zoom = d3.zoom()
+                .scaleExtent([1, 8])
+                .translateExtent([[0, 0], [width, height]])
+                .on("zoom", (event) => {
+                    currentTransform = event.transform;
+                    mapGroup.attr("transform", currentTransform);
+
+                    // Update dot scale dynamically
+                    mapGroup.selectAll("g.squirrel-dot")
+                        .attr("transform", d => {
+                            const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
+                            const k = 1 / currentTransform.k;
+                            return `translate(${x},${y}) scale(${k})`;
+                        });
+                });
+
+            svg.call(zoom);
+        }
+
+        const mapGroup = svg.select(".map-group");
+
+        // === Geographic calibration ===
         const geoTL = [-73.981807, 40.768107];
         const geoTR = [-73.958198, 40.800565];
         const geoBL = [-73.973071, 40.764324];
-        const geoBR = [-73.949338, 40.796945];
 
         const image_height = height;
         const image_width = (3024 * image_height) / 649;
 
-        // The rectangle we want to map it to (screen space)
         const screenTL = [(width - image_width) / 2 + 5, 7];
         const screenTR = [(width - image_width) / 2 + image_width - 5, 7];
         const screenBL = [(width - image_width) / 2, image_height - 7];
-        const screenBR = [(width - image_width) / 2 + image_width - 5, image_height - 7];
 
-        // Given a lon/lat point, map it to screen coordinates
         function geoToScreen(lon, lat) {
-            // Step 1: represent as vectors relative to TL corner
             const geoVecX = [geoTR[0] - geoTL[0], geoTR[1] - geoTL[1]];
             const geoVecY = [geoBL[0] - geoTL[0], geoBL[1] - geoTL[1]];
-            
-            // Step 2: solve for coefficients (a,b) s.t. point = TL + a*vecX + b*vecY
+
             const dx = lon - geoTL[0];
             const dy = lat - geoTL[1];
-            
+
             const det = geoVecX[0]*geoVecY[1] - geoVecY[0]*geoVecX[1];
             const a = (dx*geoVecY[1] - dy*geoVecY[0]) / det;
             const b = (dy*geoVecX[0] - dx*geoVecX[1]) / det;
-            
-            // Step 3: map (a,b) to screen rectangle
+
             const x = screenTL[0] + a * (screenTR[0] - screenTL[0]) + b * (screenBL[0] - screenTL[0]);
             const y = screenTL[1] + a * (screenTR[1] - screenTL[1]) + b * (screenBL[1] - screenTL[1]);
-            
+
             return [x, y];
         }
 
-        // Colors
-        const furColors = {
-            gray: "#808080",
-            black: "#000000",
-            cinnamon: "#d2691e"
-        };
-        const getColorByFur = fur => furColors[fur?.toLowerCase()] || "#999999";
-
-        // Tooltip
-        const tooltip = container.append("div")
-            .attr("class", "map-tooltip")
-            .style("position", "absolute")
-            .style("background-color", "white")
-            .style("border", "1px solid black")
-            .style("padding", "5px 10px")
-            .style("border-radius", "4px")
-            .style("pointer-events", "none")
-            .style("opacity", 0);
+        // === Tooltip ===
+        let tooltip = container.select(".map-tooltip");
+        if (tooltip.empty()) {
+            tooltip = container.append("div")
+                .attr("class", "map-tooltip")
+                .style("position", "absolute")
+                .style("background-color", "white")
+                .style("border", "1px solid black")
+                .style("padding", "5px 10px")
+                .style("border-radius", "4px")
+                .style("pointer-events", "none")
+                .style("opacity", 0);
+        }
 
         function showTooltip(event, d) {
             const props = d.properties;
@@ -118,60 +144,112 @@ const MapModule = (function() {
             let left = x + 10;
             let top = y + 10;
 
-            // Flip horizontally if going beyond right edge
-            if (left + tooltipWidth > containerWidth) {
-                left = x - tooltipWidth - 10;
-            }
+            if (left + tooltipWidth > containerWidth) left = x - tooltipWidth - 10;
+            if (top + tooltipHeight > containerHeight) top = y - tooltipHeight - 10;
 
-            // Flip vertically if going beyond bottom edge
-            if (top + tooltipHeight > containerHeight) {
-                top = y - tooltipHeight - 10;
-            }
-
-            tooltip
-                .style("left", `${left}px`)
-                .style("top", `${top}px`);
+            tooltip.style("left", `${left}px`).style("top", `${top}px`);
         }
-
 
         function hideTooltip() {
             tooltip.style("opacity", 0);
         }
 
+        const highlightedActivities = getHighlightedActivities();
+        const hasAnyFilters = highlightedActivities.length < allActivities.length;
+
+        // Remove old dots
+        mapGroup.selectAll("g.squirrel-dot").remove();
+
         // Draw points
-        mapGroup.selectAll("circle")
-            .data(geojsonData.features)
+        mapGroup.selectAll("g.squirrel-dot")
+            .data(
+                originalData.features.filter(d =>
+                    hasAnyFilters ? highlightedActivities.some(a => d.properties[a] === true) : true
+                )
+            )
             .enter()
-            .append("circle")
-            .attr("cx", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[0])
-            .attr("cy", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[1])
-            .attr("r", 3)
-            .attr("fill", d => getColorByFur(d.properties.furColor))
-            .attr("stroke", "#000")
-            .attr("stroke-width", 0.3)
+            .append("g")
+            .attr("class", "squirrel-dot")
+            .attr("transform", d => {
+                const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
+                const k = 1 / currentTransform.k;
+                return `translate(${x},${y}) scale(${k})`;
+            })
+            .each(function(d) {
+                const active = highlightedActivities.filter(a => d.properties[a] === true);
+
+                if (!hasAnyFilters || active.length === 0) {
+                    d3.select(this)
+                        .append("circle")
+                        .attr("r", baseRadius)
+                        .attr("fill", getColorByFur(d.properties.furColor))
+                        .attr("stroke", "#000")
+                        .attr("stroke-width", baseStroke);
+                } else {
+                    const angleStep = 2 * Math.PI / active.length;
+                    active.forEach((activity, i) => {
+                        const arcGenerator = d3.arc()
+                            .innerRadius(0)
+                            .outerRadius(baseRadius)
+                            .startAngle(i * angleStep)
+                            .endAngle((i + 1) * angleStep);
+
+                        d3.select(this)
+                            .append("path")
+                            .attr("d", arcGenerator())
+                            .attr("fill", colorScale(activity))
+                            .attr("stroke", "#000")
+                            .attr("stroke-width", baseStroke);
+                    });
+                }
+            })
             .on("mouseover", showTooltip)
             .on("mousemove", moveTooltip)
-            .on("mouseout", hideTooltip)
-            .each(d => {
-                const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
-                console.log(d.geometry.coordinates[0], d.geometry.coordinates[1], "=>", x, y);
-            });
-        
-        const zoom = d3.zoom()
-            .scaleExtent([1, 8])
-            .translateExtent([[0, 0], [width, height]]) // set pan limits
-            .on("zoom", (event) => {
-                mapGroup.attr("transform", event.transform);
-                mapGroup.selectAll("circle")
-                    .attr("r", 3 / event.transform.k) // keep circles size consistent
-                    .attr("stroke-width", 0.3 / event.transform.k);
-            });
+            .on("mouseout", hideTooltip);
 
-        svg.call(zoom);
+        // Restore zoom
+        svg.call(zoom.transform, currentTransform);
+    }
 
+    function getHighlightedActivities() {
+        if (typeof FilterModule !== 'undefined') {
+            const behaviorFilters = FilterModule.getCurrentFilters().behaviors || [];
+            if (!behaviorFilters.length) return allActivities;
+            return behaviorFilters
+                .map(f => f.split(':')[0].toLowerCase())
+                .filter(a => allActivities.includes(a));
+        }
+        return allActivities;
+    }
 
+    function applyNonBehaviorFilters(data) {
+        if (typeof FilterModule === 'undefined') return data;
+        const currentFilters = FilterModule.getCurrentFilters();
+        let filtered = data.slice();
 
-        console.log("✅ Map rendered with corrected bounding box scaling.");
+        if (currentFilters.colors?.length) {
+            filtered = filtered.filter(r =>
+                currentFilters.colors.some(color => {
+                    const fur = r['Primary Fur Color']?.toLowerCase();
+                    return (color === 'gray' && fur === 'gray') ||
+                           (color === 'cinnamon' && fur === 'cinnamon') ||
+                           (color === 'black' && fur === 'black');
+                })
+            );
+        }
+
+        if (currentFilters.age?.length) {
+            filtered = filtered.filter(r =>
+                currentFilters.age.some(f => {
+                    const [col, val] = f.split(':');
+                    return r[col] === val;
+                })
+            );
+        }
+
+        if (currentFilters.dogs) filtered = filtered.filter(r => r['Dogs'] > 0);
+
+        return filtered;
     }
 
     function updateMap(data) {
@@ -181,12 +259,10 @@ const MapModule = (function() {
         }
     }
 
-    
     return {
         createMap,
         updateMap
     };
 
 })();
-
 window.MapModule = MapModule;
