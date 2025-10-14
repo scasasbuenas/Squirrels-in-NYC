@@ -15,6 +15,9 @@ const MapModule = (function() {
             return;
         }
 
+        lastContainerSelector = containerSelector;   // <-- add this
+        lastData = geojsonData;   
+
         const container = d3.select(containerSelector);
         if (container.empty()) {
             console.warn("Container not found:", containerSelector);
@@ -30,6 +33,9 @@ const MapModule = (function() {
         const svg = container.append("svg")
             .attr("width", width)
             .attr("height", height);
+        
+        const pointsLayer  = svg.append("g").attr("class", "points-layer");
+        const overlayLayer = svg.append("g").attr("class", "overlay-layer");
 
         const imgNode = svg.append("image")
             .attr("href", "../images/central_park_overlay.jpg")
@@ -37,6 +43,8 @@ const MapModule = (function() {
             .attr("width", "100%")
             .attr("height", "100%")
             .node();
+
+        d3.select(imgNode).lower();
 
         // Geo bounding box (in lon, lat)
         const geoTL = [-73.981807, 40.768107];
@@ -112,11 +120,33 @@ const MapModule = (function() {
             tooltip.style("opacity", 0);
         }
 
+        const showDogs = (typeof FilterModule !== 'undefined')
+            ? !!FilterModule.getCurrentFilters().dogs
+            : false;
+
+        if (showDogs) {
+            const dogFeatures = geojsonData.features.filter(f => (f.properties.dogs || 0) > 0);
+
+            overlayLayer.selectAll("circle.dog-ring")
+                .data(dogFeatures)
+                .enter()
+                .append("circle")
+                .attr("class", "dog-ring")
+                .attr("cx", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[0])
+                .attr("cy", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[1])
+                .attr("r", 3.2)                 // bigger than squirrel radius (3)
+                .attr("fill", "none")
+                .attr("stroke", "yellow")
+                .attr("stroke-width", 1)
+                .style("pointer-events", "none"); // keep squirrel tooltip working
+            }
+
         // Draw points
-        svg.selectAll("circle")
+        pointsLayer.selectAll("circle.squirrel-dot")
             .data(geojsonData.features)
             .enter()
             .append("circle")
+            .attr("class", "squirrel-dot")
             .attr("cx", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[0])
             .attr("cy", d => geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1])[1])
             .attr("r", 3)
@@ -125,19 +155,37 @@ const MapModule = (function() {
             .attr("stroke-width", 0.3)
             .on("mouseover", showTooltip)
             .on("mousemove", moveTooltip)
-            .on("mouseout", hideTooltip)
-            .each(d => {
-                const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
-                console.log(d.geometry.coordinates[0], d.geometry.coordinates[1], "=>", x, y);
-            });
+            .on("mouseout", hideTooltip);
 
         console.log("✅ Map rendered with corrected bounding box scaling.");
     }
 
+    function convertToGeoJSON(data) {
+        return {
+            type: "FeatureCollection",
+            features: data.map(d => ({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [d.X, d.Y]
+                },
+                properties: {
+                    id: d["Unique Squirrel ID"],
+                    date: d.Date,
+                    age: d.Age,
+                    furColor: d["Primary Fur Color"],
+                    dogs: d.Dogs || 0 
+                }
+            }))
+        };
+    }
+
+
     function updateMap(data) {
-        const toUse = data || lastData;
-        if (lastContainerSelector && toUse) {
-            createMap(toUse, lastContainerSelector);
+        if (!data) return;
+        const geojsonData = convertToGeoJSON(data);
+        if (lastContainerSelector) {
+            createMap(geojsonData, lastContainerSelector);
         }
     }
 

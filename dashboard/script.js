@@ -92,6 +92,8 @@ function updateVisualizations() {
     
     // Update other visualizations with filtered data
     ButterflyChartModule.updateButterflyChart(squirrelData);
+
+    MapModule.updateMap(filteredData);
 }
 
 // Initialize the dashboard when the DOM is fully loaded
