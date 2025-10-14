@@ -47,11 +47,14 @@ const MapModule = (function() {
         const geoBL = [-73.973071, 40.764324];
         const geoBR = [-73.949338, 40.796945];
 
+        const image_height = height;
+        const image_width = (3024 * image_height) / 649;
+
         // The rectangle we want to map it to (screen space)
-        const screenTL = [227, 7];
-        const screenTR = [1565, 7];
-        const screenBL = [227, 280];
-        const screenBR = [1565, 280];
+        const screenTL = [(width - image_width) / 2 + 5, 7];
+        const screenTR = [(width - image_width) / 2 + image_width - 5, 7];
+        const screenBL = [(width - image_width) / 2, image_height - 7];
+        const screenBR = [(width - image_width) / 2 + image_width - 5, image_height - 7];
 
         // Given a lon/lat point, map it to screen coordinates
         function geoToScreen(lon, lat) {
@@ -106,10 +109,30 @@ const MapModule = (function() {
 
         function moveTooltip(event) {
             const [x, y] = d3.pointer(event, container.node());
+            const tooltipNode = tooltip.node();
+            const tooltipWidth = tooltipNode.offsetWidth;
+            const tooltipHeight = tooltipNode.offsetHeight;
+            const containerWidth = container.node().offsetWidth;
+            const containerHeight = container.node().offsetHeight;
+
+            let left = x + 10;
+            let top = y + 10;
+
+            // Flip horizontally if going beyond right edge
+            if (left + tooltipWidth > containerWidth) {
+                left = x - tooltipWidth - 10;
+            }
+
+            // Flip vertically if going beyond bottom edge
+            if (top + tooltipHeight > containerHeight) {
+                top = y - tooltipHeight - 10;
+            }
+
             tooltip
-                .style("left", (x + 10) + "px")
-                .style("top", (y + 10) + "px");
+                .style("left", `${left}px`)
+                .style("top", `${top}px`);
         }
+
 
         function hideTooltip() {
             tooltip.style("opacity", 0);
