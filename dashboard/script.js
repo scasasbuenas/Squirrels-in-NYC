@@ -105,7 +105,6 @@ function updateVisualizations() {
         // selectedData = array of squirrels after brush
         
     }
-    
     // Update charts with the chosen subset
     ButterflyChartModule.updateButterflyChart(dataForCharts); // force absolute scale
     LineChartModule.updateLineChart(dataForCharts);

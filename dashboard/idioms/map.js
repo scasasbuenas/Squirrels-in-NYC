@@ -105,7 +105,7 @@ const MapModule = (function() {
         brushMode = !brushMode;
         
         if (svg) {
-            svg.style("cursor", brushMode ? "crosshair" : "default");
+            svg.style("cursor", brushMode ? "crosshair" : "grab");
             
             if (brushMode) {
                 // Enable brush
@@ -136,7 +136,7 @@ const MapModule = (function() {
             svg = container.append("svg")
                 .attr("width", width)
                 .attr("height", height)
-                .style("cursor", "default");
+                .style("cursor", "grab");
 
             const mapGroup = svg.append("g").attr("class", "map-group");
 
@@ -176,7 +176,7 @@ const MapModule = (function() {
                 mapGroup.selectAll("g.squirrel-dot")
                     .classed("selected", d => hasSel && selectedIdsSet.has(d.properties.id))
                     .selectAll("circle,path")
-                    .attr("stroke-width", d => (hasSel && selectedIdsSet.has(d.properties.id)) ? 1.5 : baseStroke)
+                    .attr("stroke-width", d => (hasSel && selectedIdsSet.has(d.properties.id)) ? 0.8 : baseStroke)
                     .attr("opacity", d => (hasSel && !selectedIdsSet.has(d.properties.id)) ? 0.25 : 1);
             }
 
@@ -198,16 +198,10 @@ const MapModule = (function() {
                 const baseY1 = currentTransform.invertY(y1);
 
                 const ids = [];
-                const filteredFeatures = applyNonBehaviorFilters(lastData.features);
-                const highlightedActivities = getHighlightedActivities();
-                const hasAnyFilters = highlightedActivities.length < allActivities.length;
+                // Use ALL features from original data, not just filtered ones
+                const allFeatures = lastData.features;
 
-                filteredFeatures.forEach(f => {
-                    // Skip if filters exclude this point
-                    if (hasAnyFilters && !highlightedActivities.some(a => f.properties[a] === true)) {
-                        return;
-                    }
-
+                allFeatures.forEach(f => {
                     const [sx, sy] = geoToScreen(f.geometry.coordinates[0], f.geometry.coordinates[1], width, height);
                     
                     if (baseX0 <= sx && sx <= baseX1 && baseY0 <= sy && sy <= baseY1) {
@@ -353,7 +347,7 @@ const MapModule = (function() {
                 mapGroup.selectAll("g.squirrel-dot")
                     .classed("selected", d => selectedIds.has(d.properties.id))
                     .selectAll("circle,path")
-                    .attr("stroke-width", d => selectedIds.has(d.properties.id) ? 1.5 : baseStroke)
+                    .attr("stroke-width", d => selectedIds.has(d.properties.id) ? 0.8 : baseStroke)
                     .attr("opacity", d => selectedIds.has(d.properties.id) ? 1 : 0.25);
             }
         }

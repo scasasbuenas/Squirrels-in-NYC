@@ -12,9 +12,146 @@
     <script src="./idioms/butterflyChart.js"></script>
     <script src="./idioms/map.js"></script>
     <script src="./script.js"></script>
+    <style>
+        /* Popup Overlay */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .popup-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Popup Content */
+        .popup-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .popup-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .popup-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .popup-section {
+            margin-bottom: 20px;
+        }
+
+        .popup-section h3 {
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .popup-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .popup-section li {
+            padding: 8px 0;
+            color: #666;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .popup-section li strong {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .popup-close-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.2s ease;
+        }
+
+        .popup-close-btn:hover {
+            background-color: #45a049;
+        }
+
+        .popup-close-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
   </head>
 
   <body onload="init()">
+    <!-- Popup Overlay -->
+    <div class="popup-overlay" id="instructionsPopup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h2>Dashboard Interactions Guide</h2>
+            </div>
+
+            <div class="popup-section">
+                <h3>Map Interactions</h3>
+                <ul>
+                    <li><strong>Press 'B':</strong> Toggle brush selection mode (crosshair cursor)</li>
+                    <li><strong>Click + Drag:</strong> Pan the map (when brush mode is off)</li>
+                    <li><strong>Trackpad/Scroll:</strong> Zoom in and out</li>
+                    <li><strong>Click + Drag in Brush Mode:</strong> Select dots within area</li>
+                    <li><strong>Hover over dots:</strong> View tooltip with squirrel details</li>
+                </ul>
+            </div>
+
+            <div class="popup-section">
+                <h3>Line Chart Interactions</h3>
+                <ul>
+                    <li><strong>Click + Drag:</strong> Brush to zoom into a specific time range (double-click to reset)</li>
+                    <li><strong>Hover over lines:</strong> View tooltip with data values</li>
+                </ul>
+            </div>
+
+            <div class="popup-section">
+                <h3>All Visualizations</h3>
+                <ul>
+                    <li><strong>Click Legend Items:</strong> Filter/toggle data categories on and off</li>
+                    <li><strong>Hover:</strong> View detailed tooltips for data points</li>
+                </ul>
+            </div>
+
+            <button class="popup-close-btn" onclick="closePopup()">Got it! Let's explore</button>
+        </div>
+    </div>
+
     <div class="dashboard-container">
       <!-- Title Section -->
       <div class="title-section">
@@ -193,6 +330,31 @@
         </div>
       </div>
     </div>
+
+    <script>
+        function closePopup() {
+            const popup = document.getElementById('instructionsPopup');
+            popup.classList.add('hidden');
+            // Remove from DOM after animation
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 300);
+        }
+
+        // Optional: Close popup when clicking outside
+        document.getElementById('instructionsPopup').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePopup();
+            }
+        });
+
+        // Optional: Close popup with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePopup();
+            }
+        });
+    </script>
 
     <!-- Debug -->
      <script>
