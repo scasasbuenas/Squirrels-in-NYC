@@ -162,6 +162,9 @@ const MapModule = (function() {
             .translateExtent([[0, 0], [width, height]]) // set pan limits
             .on("zoom", (event) => {
                 mapGroup.attr("transform", event.transform);
+                mapGroup.selectAll("circle")
+                    .attr("r", 3 / event.transform.k) // keep circles size consistent
+                    .attr("stroke-width", 0.3 / event.transform.k);
             });
 
         svg.call(zoom);
