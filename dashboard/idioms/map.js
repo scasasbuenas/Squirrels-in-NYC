@@ -6,6 +6,8 @@ const MapModule = (function() {
     let zoom = null;
     let brushLayer = null;
     let mapBrush = null;
+    let svg = null;
+    let brushMode = false;
 
     const furColors = {
         gray: "#808080",
@@ -99,6 +101,22 @@ const MapModule = (function() {
         return filtered;
     }
 
+    function toggleBrushMode() {
+        brushMode = !brushMode;
+        
+        if (svg) {
+            svg.style("cursor", brushMode ? "crosshair" : "default");
+            
+            if (brushMode) {
+                // Enable brush
+                brushLayer.style("pointer-events", "all");
+            } else {
+                // Disable brush (but keep the selection and visual rectangle)
+                brushLayer.style("pointer-events", "none");
+            }
+        }
+    }
+
     function createMap(originalData, containerSelector = ".Map") {
         if (!originalData) return;
 
@@ -113,11 +131,12 @@ const MapModule = (function() {
         const height = container.node().offsetHeight || 600;
 
         // Create SVG only once
-        let svg = container.select("svg");
+        svg = container.select("svg");
         if (svg.empty()) {
             svg = container.append("svg")
                 .attr("width", width)
-                .attr("height", height);
+                .attr("height", height)
+                .style("cursor", "default");
 
             const mapGroup = svg.append("g").attr("class", "map-group");
 
@@ -132,6 +151,12 @@ const MapModule = (function() {
             zoom = d3.zoom()
                 .scaleExtent([1, 8])
                 .translateExtent([[0, 0], [width, height]])
+                .filter(function(event) {
+                    // Only allow wheel zoom, or click+drag when NOT in brush mode
+                    if (event.type === "wheel") return true;
+                    if (event.type === "mousedown") return !brushMode && event.button === 0;
+                    return !brushMode;
+                })
                 .on("zoom", (event) => {
                     currentTransform = event.transform;
                     mapGroup.attr("transform", currentTransform);
@@ -146,22 +171,6 @@ const MapModule = (function() {
 
             svg.call(zoom);
 
-            // Brush overlay
-            brushLayer = svg.append("g").attr("class", "brush-layer");
-
-            mapBrush = d3.brush()
-                .extent([[0, 0], [width, height]])
-                .on("start brush end", brushed);
-
-            brushLayer.call(mapBrush)
-                .on("mousedown.brushfix", () => {})
-                .on("mouseup.brushfix", () => {
-                    if (document.activeElement?.blur) document.activeElement.blur();
-                    svg.node().blur();
-                });
-
-            brushLayer.selectAll(".overlay").style("cursor", "crosshair");
-
             function styleDots(selectedIdsSet) {
                 const hasSel = selectedIdsSet && selectedIdsSet.size > 0;
                 mapGroup.selectAll("g.squirrel-dot")
@@ -174,25 +183,67 @@ const MapModule = (function() {
             function brushed(event) {
                 const sel = event.selection;
                 if (!sel) {
-                    SelectionModule.clear();
-                    styleDots(null);
+                    if (typeof SelectionModule !== 'undefined') {
+                        SelectionModule.clear();
+                        styleDots(null);
+                    }
                     return;
                 }
+                
+                // Transform brush coordinates back to base coordinates
                 const [[x0, y0], [x1, y1]] = sel;
+                const baseX0 = currentTransform.invertX(x0);
+                const baseY0 = currentTransform.invertY(y0);
+                const baseX1 = currentTransform.invertX(x1);
+                const baseY1 = currentTransform.invertY(y1);
 
                 const ids = [];
+                const filteredFeatures = applyNonBehaviorFilters(lastData.features);
+                const highlightedActivities = getHighlightedActivities();
+                const hasAnyFilters = highlightedActivities.length < allActivities.length;
+
                 filteredFeatures.forEach(f => {
+                    // Skip if filters exclude this point
+                    if (hasAnyFilters && !highlightedActivities.some(a => f.properties[a] === true)) {
+                        return;
+                    }
+
                     const [sx, sy] = geoToScreen(f.geometry.coordinates[0], f.geometry.coordinates[1], width, height);
-                    const screenX = currentTransform.applyX(sx);
-                    const screenY = currentTransform.applyY(sy);
-                    if (x0 <= screenX && screenX <= x1 && y0 <= screenY && screenY <= y1) {
+                    
+                    if (baseX0 <= sx && sx <= baseX1 && baseY0 <= sy && sy <= baseY1) {
                         if (f.properties?.id != null) ids.push(f.properties.id);
                     }
                 });
 
-                SelectionModule.set(ids);
-                styleDots(SelectionModule.get()?.ids);
+                if (typeof SelectionModule !== 'undefined') {
+                    SelectionModule.set(ids);
+                    styleDots(SelectionModule.get()?.ids);
+                }
             }
+
+            // Brush overlay - must be after mapGroup but INSIDE mapGroup so it transforms with zoom/pan
+            brushLayer = mapGroup.append("g")
+                .attr("class", "brush-layer")
+                .style("pointer-events", "none");
+
+            mapBrush = d3.brush()
+                .extent([[0, 0], [width, height]])
+                .filter(function(event) {
+                    // Only allow brush when in brush mode
+                    return brushMode;
+                })
+                .on("start brush end", brushed);
+
+            brushLayer.call(mapBrush);
+
+            // Listen for 'b' key to toggle brush mode
+            d3.select(window).on("keydown.brushtoggle", (event) => {
+                if (event.key === 'b' || event.key === 'B') {
+                    toggleBrushMode();
+                }
+            });
+        } else {
+            svg = container.select("svg");
         }
 
         const mapGroup = svg.select(".map-group");
@@ -296,7 +347,7 @@ const MapModule = (function() {
             .on("mouseout", hideTooltip);
 
         // Restore selection only if there is a selection
-        if (SelectionModule) {
+        if (typeof SelectionModule !== 'undefined') {
             const selectedIds = SelectionModule.get()?.ids;
             if (selectedIds && selectedIds.size > 0) {
                 mapGroup.selectAll("g.squirrel-dot")
@@ -313,7 +364,9 @@ const MapModule = (function() {
         MapModule.clearBrush = function() {
             if (brushLayer && mapBrush) {
                 brushLayer.call(mapBrush.move, null);
-                SelectionModule.clear();
+                if (typeof SelectionModule !== 'undefined') {
+                    SelectionModule.clear();
+                }
             }
         };
     }
@@ -327,7 +380,8 @@ const MapModule = (function() {
 
     return {
         createMap,
-        updateMap
+        updateMap,
+        toggleBrushMode
     };
 
 })();
