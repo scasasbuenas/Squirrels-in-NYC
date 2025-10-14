@@ -19,7 +19,8 @@ const MapModule = (function() {
 
     const colorScale = d3.scaleOrdinal()
         .domain(allActivities)
-        .range(['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
+        .range(['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b',
+                '#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
 
     const baseRadius = 4.2;
     const baseStroke = 0.3;
@@ -154,8 +155,12 @@ const MapModule = (function() {
             tooltip.style("opacity", 0);
         }
 
+        // === Apply Filters ===
         const highlightedActivities = getHighlightedActivities();
         const hasAnyFilters = highlightedActivities.length < allActivities.length;
+
+        // Apply non-behavior filters (dogs, fur colors, etc.)
+        const filteredFeatures = applyNonBehaviorFilters(originalData.features);
 
         // Remove old dots
         mapGroup.selectAll("g.squirrel-dot").remove();
@@ -163,7 +168,7 @@ const MapModule = (function() {
         // Draw points
         mapGroup.selectAll("g.squirrel-dot")
             .data(
-                originalData.features.filter(d =>
+                filteredFeatures.filter(d =>
                     hasAnyFilters ? highlightedActivities.some(a => d.properties[a] === true) : true
                 )
             )
@@ -222,15 +227,16 @@ const MapModule = (function() {
         return allActivities;
     }
 
-    function applyNonBehaviorFilters(data) {
-        if (typeof FilterModule === 'undefined') return data;
+    // ✅ This now filters by dogs, fur color, and age — but does NOT change dot colors
+    function applyNonBehaviorFilters(features) {
+        if (typeof FilterModule === 'undefined') return features;
         const currentFilters = FilterModule.getCurrentFilters();
-        let filtered = data.slice();
+        let filtered = features.slice();
 
         if (currentFilters.colors?.length) {
-            filtered = filtered.filter(r =>
+            filtered = filtered.filter(f =>
                 currentFilters.colors.some(color => {
-                    const fur = r['Primary Fur Color']?.toLowerCase();
+                    const fur = f.properties.furColor?.toLowerCase();
                     return (color === 'gray' && fur === 'gray') ||
                            (color === 'cinnamon' && fur === 'cinnamon') ||
                            (color === 'black' && fur === 'black');
@@ -239,15 +245,14 @@ const MapModule = (function() {
         }
 
         if (currentFilters.age?.length) {
-            filtered = filtered.filter(r =>
-                currentFilters.age.some(f => {
-                    const [col, val] = f.split(':');
-                    return r[col] === val;
-                })
+            filtered = filtered.filter(f =>
+                currentFilters.age.some(a => f.properties.age === a.split(':')[1])
             );
         }
 
-        if (currentFilters.dogs) filtered = filtered.filter(r => r['Dogs'] > 0);
+        if (currentFilters.dogs) {
+            filtered = filtered.filter(f => f.properties.dogs === true);
+        }
 
         return filtered;
     }
