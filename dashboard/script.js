@@ -97,16 +97,18 @@ function onFiltersChanged() {
 function updateVisualizations() {
     console.log("Updating visualizations with", filteredData.length, "records");
     
-     let dataForCharts = squirrelData;
+    let dataForCharts = squirrelData;
     if (window.SelectionModule && SelectionModule.has()) {
         const selected = SelectionModule.get().ids;
-        dataForCharts = filteredData.filter(d => selected.has(d['Unique Squirrel ID']));
+        dataForCharts = squirrelData.filter(d => selected.has(d['Unique Squirrel ID']));
         console.log(`Applying selection: ${dataForCharts.length} of ${filteredData.length}`);
+        // selectedData = array of squirrels after brush
+        
     }
-
+    
     // Update charts with the chosen subset
+    ButterflyChartModule.updateButterflyChart(dataForCharts); // force absolute scale
     LineChartModule.updateLineChart(dataForCharts);
-    ButterflyChartModule.updateButterflyChart(dataForCharts);
 
     MapModule.updateMap(geojsonData);
 }

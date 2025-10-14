@@ -4,6 +4,8 @@ const MapModule = (function() {
     let lastData = null;
     let currentTransform = d3.zoomIdentity;
     let zoom = null;
+    let brushLayer = null;
+    let mapBrush = null;
 
     const furColors = {
         gray: "#808080",
@@ -27,6 +29,74 @@ const MapModule = (function() {
 
     function getColorByFur(fur) {
         return furColors[fur?.toLowerCase()] || "#999999";
+    }
+
+    function geoToScreen(lon, lat, width, height) {
+        const geoTL = [-73.981807, 40.768107];
+        const geoTR = [-73.958198, 40.800565];
+        const geoBL = [-73.973071, 40.764324];
+
+        const image_height = height;
+        const image_width = (3024 * image_height) / 649;
+
+        const screenTL = [(width - image_width) / 2 + 5, 7];
+        const screenTR = [(width - image_width) / 2 + image_width - 5, 7];
+        const screenBL = [(width - image_width) / 2, image_height - 7];
+
+        const geoVecX = [geoTR[0] - geoTL[0], geoTR[1] - geoTL[1]];
+        const geoVecY = [geoBL[0] - geoTL[0], geoBL[1] - geoTL[1]];
+
+        const dx = lon - geoTL[0];
+        const dy = lat - geoTL[1];
+
+        const det = geoVecX[0]*geoVecY[1] - geoVecY[0]*geoVecX[1];
+        const a = (dx*geoVecY[1] - dy*geoVecY[0]) / det;
+        const b = (dy*geoVecX[0] - dx*geoVecX[1]) / det;
+
+        const x = screenTL[0] + a * (screenTR[0] - screenTL[0]) + b * (screenBL[0] - screenTL[0]);
+        const y = screenTL[1] + a * (screenTR[1] - screenTL[1]) + b * (screenBL[1] - screenTL[1]);
+
+        return [x, y];
+    }
+
+    function getHighlightedActivities() {
+        if (typeof FilterModule !== 'undefined') {
+            const behaviorFilters = FilterModule.getCurrentFilters().behaviors || [];
+            if (!behaviorFilters.length) return allActivities;
+            return behaviorFilters
+                .map(f => f.split(':')[0].toLowerCase())
+                .filter(a => allActivities.includes(a));
+        }
+        return allActivities;
+    }
+
+    function applyNonBehaviorFilters(features) {
+        if (typeof FilterModule === 'undefined') return features;
+        const currentFilters = FilterModule.getCurrentFilters();
+        let filtered = features.slice();
+
+        if (currentFilters.colors?.length) {
+            filtered = filtered.filter(f =>
+                currentFilters.colors.some(color => {
+                    const fur = f.properties.furColor?.toLowerCase();
+                    return (color === 'gray' && fur === 'gray') ||
+                           (color === 'cinnamon' && fur === 'cinnamon') ||
+                           (color === 'black' && fur === 'black');
+                })
+            );
+        }
+
+        if (currentFilters.age?.length) {
+            filtered = filtered.filter(f =>
+                currentFilters.age.some(a => f.properties.age === a.split(':')[1])
+            );
+        }
+
+        if (currentFilters.dogs) {
+            filtered = filtered.filter(f => f.properties.dogs === true);
+        }
+
+        return filtered;
     }
 
     function createMap(originalData, containerSelector = ".Map") {
@@ -66,10 +136,9 @@ const MapModule = (function() {
                     currentTransform = event.transform;
                     mapGroup.attr("transform", currentTransform);
 
-                    // Update dot scale dynamically
                     mapGroup.selectAll("g.squirrel-dot")
                         .attr("transform", d => {
-                            const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
+                            const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1], width, height);
                             const k = 1 / currentTransform.k;
                             return `translate(${x},${y}) scale(${k})`;
                         });
@@ -77,97 +146,58 @@ const MapModule = (function() {
 
             svg.call(zoom);
 
-            // === Brush overlay ===
-            let brushLayer = svg.select(".brush-layer");
-            if (brushLayer.empty()) {
+            // Brush overlay
             brushLayer = svg.append("g").attr("class", "brush-layer");
-            }
 
-            const mapBrush = d3.brush()
-            .extent([[0, 0], [width, height]])
-            .on("start brush end", brushed);
+            mapBrush = d3.brush()
+                .extent([[0, 0], [width, height]])
+                .on("start brush end", brushed);
 
-            brushLayer.call(mapBrush);
+            brushLayer.call(mapBrush)
+                .on("mousedown.brushfix", () => {})
+                .on("mouseup.brushfix", () => {
+                    if (document.activeElement?.blur) document.activeElement.blur();
+                    svg.node().blur();
+                });
 
-            // Make brush block pointer events to the map content only while active
-            brushLayer.selectAll(".overlay")
-            .style("cursor", "crosshair");
+            brushLayer.selectAll(".overlay").style("cursor", "crosshair");
 
-            // Helper: toggle “selected” styling on dots
             function styleDots(selectedIdsSet) {
-            const hasSel = selectedIdsSet && selectedIdsSet.size > 0;
-            mapGroup.selectAll("g.squirrel-dot")
-                .classed("selected", d => hasSel && selectedIdsSet.has(d.properties.id))
-                .selectAll("circle,path")
-                .attr("stroke-width", d => (hasSel && selectedIdsSet.has(d.properties.id)) ? 1.5 : baseStroke)
-                .attr("opacity", d => (hasSel && !selectedIdsSet.has(d.properties.id)) ? 0.25 : 1);
+                const hasSel = selectedIdsSet && selectedIdsSet.size > 0;
+                mapGroup.selectAll("g.squirrel-dot")
+                    .classed("selected", d => hasSel && selectedIdsSet.has(d.properties.id))
+                    .selectAll("circle,path")
+                    .attr("stroke-width", d => (hasSel && selectedIdsSet.has(d.properties.id)) ? 1.5 : baseStroke)
+                    .attr("opacity", d => (hasSel && !selectedIdsSet.has(d.properties.id)) ? 0.25 : 1);
             }
 
             function brushed(event) {
-            const sel = event.selection;
-            if (!sel) {
-                // No rectangle (cleared)
-                SelectionModule.clear();
-                styleDots(null);
-                return;
-            }
-            const [[x0, y0], [x1, y1]] = sel;
-
-            // Collect IDs whose screen positions fall inside the brush rect
-            const ids = [];
-            // Use the same filteredFeatures the map draws (defined earlier in createMap)
-            filteredFeatures.forEach(f => {
-                const [lon, lat] = f.geometry.coordinates;
-                const [sx, sy] = geoToScreen(lon, lat);   // map coords -> screen coords (pre-zoom)
-                const screenX = currentTransform.applyX(sx);
-                const screenY = currentTransform.applyY(sy);
-                if (x0 <= screenX && screenX <= x1 && y0 <= screenY && screenY <= y1) {
-                if (f.properties?.id != null) ids.push(f.properties.id);
+                const sel = event.selection;
+                if (!sel) {
+                    SelectionModule.clear();
+                    styleDots(null);
+                    return;
                 }
-            });
+                const [[x0, y0], [x1, y1]] = sel;
 
-            SelectionModule.set(ids);
-            styleDots(SelectionModule.get().ids);
+                const ids = [];
+                filteredFeatures.forEach(f => {
+                    const [sx, sy] = geoToScreen(f.geometry.coordinates[0], f.geometry.coordinates[1], width, height);
+                    const screenX = currentTransform.applyX(sx);
+                    const screenY = currentTransform.applyY(sy);
+                    if (x0 <= screenX && screenX <= x1 && y0 <= screenY && screenY <= y1) {
+                        if (f.properties?.id != null) ids.push(f.properties.id);
+                    }
+                });
 
-            // If user clicked without dragging, keep the rectangle visible briefly; otherwise it will remain
-            // You can auto-clear the rectangle after end with:
-            // if (event.type === "end") brushLayer.call(mapBrush.move, null);
-}
-
+                SelectionModule.set(ids);
+                styleDots(SelectionModule.get()?.ids);
+            }
         }
 
         const mapGroup = svg.select(".map-group");
 
-        // === Geographic calibration ===
-        const geoTL = [-73.981807, 40.768107];
-        const geoTR = [-73.958198, 40.800565];
-        const geoBL = [-73.973071, 40.764324];
-
-        const image_height = height;
-        const image_width = (3024 * image_height) / 649;
-
-        const screenTL = [(width - image_width) / 2 + 5, 7];
-        const screenTR = [(width - image_width) / 2 + image_width - 5, 7];
-        const screenBL = [(width - image_width) / 2, image_height - 7];
-
-        function geoToScreen(lon, lat) {
-            const geoVecX = [geoTR[0] - geoTL[0], geoTR[1] - geoTL[1]];
-            const geoVecY = [geoBL[0] - geoTL[0], geoBL[1] - geoTL[1]];
-
-            const dx = lon - geoTL[0];
-            const dy = lat - geoTL[1];
-
-            const det = geoVecX[0]*geoVecY[1] - geoVecY[0]*geoVecX[1];
-            const a = (dx*geoVecY[1] - dy*geoVecY[0]) / det;
-            const b = (dy*geoVecX[0] - dx*geoVecX[1]) / det;
-
-            const x = screenTL[0] + a * (screenTR[0] - screenTL[0]) + b * (screenBL[0] - screenTL[0]);
-            const y = screenTL[1] + a * (screenTR[1] - screenTL[1]) + b * (screenBL[1] - screenTL[1]);
-
-            return [x, y];
-        }
-
-        // === Tooltip ===
+        // Tooltip
         let tooltip = container.select(".map-tooltip");
         if (tooltip.empty()) {
             tooltip = container.append("div")
@@ -202,7 +232,6 @@ const MapModule = (function() {
 
             let left = x + 10;
             let top = y + 10;
-
             if (left + tooltipWidth > containerWidth) left = x - tooltipWidth - 10;
             if (top + tooltipHeight > containerHeight) top = y - tooltipHeight - 10;
 
@@ -213,17 +242,14 @@ const MapModule = (function() {
             tooltip.style("opacity", 0);
         }
 
-        // === Apply Filters ===
+        // Filters
         const highlightedActivities = getHighlightedActivities();
         const hasAnyFilters = highlightedActivities.length < allActivities.length;
-
-        // Apply non-behavior filters (dogs, fur colors, etc.)
         const filteredFeatures = applyNonBehaviorFilters(originalData.features);
 
-        // Remove old dots
         mapGroup.selectAll("g.squirrel-dot").remove();
 
-        // Draw points
+        // Draw dots
         mapGroup.selectAll("g.squirrel-dot")
             .data(
                 filteredFeatures.filter(d =>
@@ -234,13 +260,12 @@ const MapModule = (function() {
             .append("g")
             .attr("class", "squirrel-dot")
             .attr("transform", d => {
-                const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
+                const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1], width, height);
                 const k = 1 / currentTransform.k;
                 return `translate(${x},${y}) scale(${k})`;
             })
             .each(function(d) {
                 const active = highlightedActivities.filter(a => d.properties[a] === true);
-
                 if (!hasAnyFilters || active.length === 0) {
                     d3.select(this)
                         .append("circle")
@@ -270,49 +295,27 @@ const MapModule = (function() {
             .on("mousemove", moveTooltip)
             .on("mouseout", hideTooltip);
 
+        // Restore selection only if there is a selection
+        if (SelectionModule) {
+            const selectedIds = SelectionModule.get()?.ids;
+            if (selectedIds && selectedIds.size > 0) {
+                mapGroup.selectAll("g.squirrel-dot")
+                    .classed("selected", d => selectedIds.has(d.properties.id))
+                    .selectAll("circle,path")
+                    .attr("stroke-width", d => selectedIds.has(d.properties.id) ? 1.5 : baseStroke)
+                    .attr("opacity", d => selectedIds.has(d.properties.id) ? 1 : 0.25);
+            }
+        }
+
         // Restore zoom
         svg.call(zoom.transform, currentTransform);
-    }
 
-    function getHighlightedActivities() {
-        if (typeof FilterModule !== 'undefined') {
-            const behaviorFilters = FilterModule.getCurrentFilters().behaviors || [];
-            if (!behaviorFilters.length) return allActivities;
-            return behaviorFilters
-                .map(f => f.split(':')[0].toLowerCase())
-                .filter(a => allActivities.includes(a));
-        }
-        return allActivities;
-    }
-
-    // ✅ This now filters by dogs, fur color, and age — but does NOT change dot colors
-    function applyNonBehaviorFilters(features) {
-        if (typeof FilterModule === 'undefined') return features;
-        const currentFilters = FilterModule.getCurrentFilters();
-        let filtered = features.slice();
-
-        if (currentFilters.colors?.length) {
-            filtered = filtered.filter(f =>
-                currentFilters.colors.some(color => {
-                    const fur = f.properties.furColor?.toLowerCase();
-                    return (color === 'gray' && fur === 'gray') ||
-                           (color === 'cinnamon' && fur === 'cinnamon') ||
-                           (color === 'black' && fur === 'black');
-                })
-            );
-        }
-
-        if (currentFilters.age?.length) {
-            filtered = filtered.filter(f =>
-                currentFilters.age.some(a => f.properties.age === a.split(':')[1])
-            );
-        }
-
-        if (currentFilters.dogs) {
-            filtered = filtered.filter(f => f.properties.dogs === true);
-        }
-
-        return filtered;
+        MapModule.clearBrush = function() {
+            if (brushLayer && mapBrush) {
+                brushLayer.call(mapBrush.move, null);
+                SelectionModule.clear();
+            }
+        };
     }
 
     function updateMap(data) {

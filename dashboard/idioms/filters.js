@@ -106,6 +106,7 @@ const FilterModule = (function() {
         d3.select("#reset-filters-btn").on("click", function() {
             console.log("Reset Filters button clicked");
             clearAllFilters();
+            MapModule.clearBrush();
         });
     }
 
