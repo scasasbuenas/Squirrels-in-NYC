@@ -31,12 +31,15 @@ const MapModule = (function() {
             .attr("width", width)
             .attr("height", height);
 
-        const imgNode = svg.append("image")
+        const mapGroup = svg.append("g");
+        
+        mapGroup.append("image")
             .attr("href", "../images/central_park_overlay.jpg")
             .attr("opacity", 0.75)
             .attr("width", "100%")
             .attr("height", "100%")
             .node();
+
 
         // Geo bounding box (in lon, lat)
         const geoTL = [-73.981807, 40.768107];
@@ -113,7 +116,7 @@ const MapModule = (function() {
         }
 
         // Draw points
-        svg.selectAll("circle")
+        mapGroup.selectAll("circle")
             .data(geojsonData.features)
             .enter()
             .append("circle")
@@ -130,6 +133,17 @@ const MapModule = (function() {
                 const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1]);
                 console.log(d.geometry.coordinates[0], d.geometry.coordinates[1], "=>", x, y);
             });
+        
+        const zoom = d3.zoom()
+            .scaleExtent([1, 8])
+            .translateExtent([[0, 0], [width, height]]) // set pan limits
+            .on("zoom", (event) => {
+                mapGroup.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+
 
         console.log("✅ Map rendered with corrected bounding box scaling.");
     }
