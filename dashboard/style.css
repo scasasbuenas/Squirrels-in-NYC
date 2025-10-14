@@ -478,6 +478,12 @@ input:checked + .slider:before {
   box-shadow: 0 0 2px #4CAF50;
 }
 
+/* Selected squirrels on the map */
+.squirrel-dot.selected circle,
+.squirrel-dot.selected path {
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.35));
+}
+
 
 
 /* ------- Responsive Design -------- */

@@ -335,7 +335,12 @@ const LineChartModule = (function() {
     }
 
     function updateLineChart(originalData) {
-        if (lastContainerSelector) createLineChart(originalData, lastContainerSelector);
+        //if (lastContainerSelector) createLineChart(originalData, lastContainerSelector);
+        if (!lastContainerSelector) return;
+        const data = Array.isArray(originalData) ? originalData : [];
+        d3.select(lastContainerSelector).selectAll("*").remove();
+        createLineChart(data.length ? data : [] /* fall back to empty array */ , lastContainerSelector);
+        
     }
 
     return { createLineChart, updateLineChart };

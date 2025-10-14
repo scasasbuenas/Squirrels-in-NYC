@@ -56,6 +56,14 @@ function init() {
             // Create visualizations
             LineChartModule.createLineChart(squirrelData, ".LineChart");
             ButterflyChartModule.createButterflyChart(squirrelData, ".ButterflyChart");
+
+            // When a selection is made on the map, update the dashboard.
+            if (window.SelectionModule) {
+                SelectionModule.on("change", () => {
+                    updateVisualizations();
+                });
+                console.log("SelectionModule listener added");
+            }
         })
         .catch(function(error) {
             console.error("Error loading data:", error);
@@ -89,11 +97,16 @@ function onFiltersChanged() {
 function updateVisualizations() {
     console.log("Updating visualizations with", filteredData.length, "records");
     
-    // Update line chart (it handles its own filtering logic)
-    LineChartModule.updateLineChart(squirrelData);
-    
-    // Update other visualizations with filtered data
-    ButterflyChartModule.updateButterflyChart(squirrelData);
+     let dataForCharts = squirrelData;
+    if (window.SelectionModule && SelectionModule.has()) {
+        const selected = SelectionModule.get().ids;
+        dataForCharts = filteredData.filter(d => selected.has(d['Unique Squirrel ID']));
+        console.log(`Applying selection: ${dataForCharts.length} of ${filteredData.length}`);
+    }
+
+    // Update charts with the chosen subset
+    LineChartModule.updateLineChart(dataForCharts);
+    ButterflyChartModule.updateButterflyChart(dataForCharts);
 
     MapModule.updateMap(geojsonData);
 }

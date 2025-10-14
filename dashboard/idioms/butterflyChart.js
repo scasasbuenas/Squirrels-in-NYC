@@ -351,7 +351,9 @@ function drawSingleButterflySection(svgGroup, originalProcessed, filteredProcess
     function updateButterflyChart(data) {
         const toUse = (data && data.length) ? data : lastData; // <- fallback
         if (lastContainerSelector && toUse) {
+            d3.select(lastContainerSelector).selectAll("*").remove();
             createButterflyChart(toUse, lastContainerSelector);
+            lastData = toUse;
         }
     }
 

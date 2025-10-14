@@ -76,6 +76,64 @@ const MapModule = (function() {
                 });
 
             svg.call(zoom);
+
+            // === Brush overlay ===
+            let brushLayer = svg.select(".brush-layer");
+            if (brushLayer.empty()) {
+            brushLayer = svg.append("g").attr("class", "brush-layer");
+            }
+
+            const mapBrush = d3.brush()
+            .extent([[0, 0], [width, height]])
+            .on("start brush end", brushed);
+
+            brushLayer.call(mapBrush);
+
+            // Make brush block pointer events to the map content only while active
+            brushLayer.selectAll(".overlay")
+            .style("cursor", "crosshair");
+
+            // Helper: toggle “selected” styling on dots
+            function styleDots(selectedIdsSet) {
+            const hasSel = selectedIdsSet && selectedIdsSet.size > 0;
+            mapGroup.selectAll("g.squirrel-dot")
+                .classed("selected", d => hasSel && selectedIdsSet.has(d.properties.id))
+                .selectAll("circle,path")
+                .attr("stroke-width", d => (hasSel && selectedIdsSet.has(d.properties.id)) ? 1.5 : baseStroke)
+                .attr("opacity", d => (hasSel && !selectedIdsSet.has(d.properties.id)) ? 0.25 : 1);
+            }
+
+            function brushed(event) {
+            const sel = event.selection;
+            if (!sel) {
+                // No rectangle (cleared)
+                SelectionModule.clear();
+                styleDots(null);
+                return;
+            }
+            const [[x0, y0], [x1, y1]] = sel;
+
+            // Collect IDs whose screen positions fall inside the brush rect
+            const ids = [];
+            // Use the same filteredFeatures the map draws (defined earlier in createMap)
+            filteredFeatures.forEach(f => {
+                const [lon, lat] = f.geometry.coordinates;
+                const [sx, sy] = geoToScreen(lon, lat);   // map coords -> screen coords (pre-zoom)
+                const screenX = currentTransform.applyX(sx);
+                const screenY = currentTransform.applyY(sy);
+                if (x0 <= screenX && screenX <= x1 && y0 <= screenY && screenY <= y1) {
+                if (f.properties?.id != null) ids.push(f.properties.id);
+                }
+            });
+
+            SelectionModule.set(ids);
+            styleDots(SelectionModule.get().ids);
+
+            // If user clicked without dragging, keep the rectangle visible briefly; otherwise it will remain
+            // You can auto-clear the rectangle after end with:
+            // if (event.type === "end") brushLayer.call(mapBrush.move, null);
+}
+
         }
 
         const mapGroup = svg.select(".map-group");
