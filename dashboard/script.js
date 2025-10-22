@@ -22,6 +22,33 @@ function init() {
     } else {
         console.warn("Toggle element not found in DOM");
     }
+
+    // Setup brush toggle button - will be initialized after map is created
+    window.initBrushToggleButton = function() {
+        const brushToggleBtn = document.getElementById('brush-toggle-btn');
+        console.log("Looking for brush toggle button...", brushToggleBtn);
+        
+        if (brushToggleBtn) {
+            console.log("Brush button found! Adding click listener");
+            
+            brushToggleBtn.onclick = function() {
+                console.log("BUTTON CLICKED!");
+                this.classList.toggle('active');
+                
+                // Toggle brush mode in the map
+                if (typeof MapModule !== 'undefined' && MapModule.toggleBrushMode) {
+                    console.log("Calling MapModule.toggleBrushMode");
+                    MapModule.toggleBrushMode();
+                } else {
+                    console.error("MapModule.toggleBrushMode not available");
+                }
+            };
+            
+            console.log("Brush toggle button initialized successfully");
+        } else {
+            console.error("Brush toggle button NOT FOUND in DOM");
+        }
+    };
     
     // Load the cleaned merged squirrel data first
     fetch("./data/squirrel_data.json")
@@ -78,6 +105,11 @@ function init() {
         .then(geodata => {
             geojsonData = geodata; // store globally
             MapModule.createMap(geojsonData, ".Map"); // initialize map
+            
+            // Initialize brush toggle button after map is created
+            if (window.initBrushToggleButton) {
+                window.initBrushToggleButton();
+            }
         })
         .catch(err => console.error("Error loading GeoJSON:", err));
 
@@ -114,5 +146,3 @@ function updateVisualizations() {
 
 // Initialize the dashboard when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", init);
-
-

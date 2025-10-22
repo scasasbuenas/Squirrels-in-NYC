@@ -104,17 +104,27 @@ const MapModule = (function() {
     function toggleBrushMode() {
         brushMode = !brushMode;
         
+        console.log("toggleBrushMode called - new state:", brushMode);
+        console.log("svg exists?", !!svg);
+        console.log("brushLayer exists?", !!brushLayer);
+        
         if (svg) {
             svg.style("cursor", brushMode ? "crosshair" : "grab");
             
             if (brushMode) {
                 // Enable brush
                 brushLayer.style("pointer-events", "all");
+                console.log("Brush enabled - pointer-events: all");
             } else {
                 // Disable brush (but keep the selection and visual rectangle)
                 brushLayer.style("pointer-events", "none");
+                console.log("Brush disabled - pointer-events: none");
             }
+        } else {
+            console.error("SVG not found - cannot toggle brush mode");
         }
+        
+        console.log("Brush mode:", brushMode ? "ON" : "OFF");
     }
 
     function createMap(originalData, containerSelector = ".Map") {
@@ -234,12 +244,7 @@ const MapModule = (function() {
 
             brushLayer.call(mapBrush);
 
-            // Listen for 'b' key to toggle brush mode
-            d3.select(window).on("keydown.brushtoggle", (event) => {
-                if (event.key === 'b' || event.key === 'B') {
-                    toggleBrushMode();
-                }
-            });
+            // No keyboard listener - only button toggle now
         } else {
             svg = container.select("svg");
         }
