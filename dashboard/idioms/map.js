@@ -41,9 +41,9 @@ const MapModule = (function() {
         const image_height = height;
         const image_width = (3024 * image_height) / 649;
 
-        const screenTL = [(width - image_width) / 2 + 5, 7];
-        const screenTR = [(width - image_width) / 2 + image_width - 5, 7];
-        const screenBL = [(width - image_width) / 2, image_height - 7];
+        const screenTL = [40, 7];
+        const screenTR = [image_width + 27, 7];
+        const screenBL = [40, image_height - 7];
 
         const geoVecX = [geoTR[0] - geoTL[0], geoTR[1] - geoTL[1]];
         const geoVecY = [geoBL[0] - geoTL[0], geoBL[1] - geoTL[1]];
@@ -141,10 +141,14 @@ const MapModule = (function() {
             const mapGroup = svg.append("g").attr("class", "map-group");
 
             // Background image
+            const image_height = height;
+            const image_width = (3024 * image_height) / 649;
+
             mapGroup.append("image")
                 .attr("href", "../images/central_park_overlay.jpg")
                 .attr("opacity", 0.75)
-                .attr("width", "100%")
+                .attr("x", 0)  // Align to left
+                .attr("y", 0)  // Align to top
                 .attr("height", "100%");
 
             // Initialize zoom
