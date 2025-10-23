@@ -5,6 +5,10 @@
     The max-width parameter can be adjusted to auto if we want it to occupy the full width of the screen.
     For now I have it in 1600px to visualize everything better on my screen.
 */
+@font-face {
+    font-family: 'Chomsky'; /*a name to be used later*/
+    src: url('/chomsky/Chomsky.otf'); /*URL to font*/
+}
 
 * {
     margin: 0;
@@ -22,7 +26,7 @@ body {
     width: 99vw;
     height: 99vh;
     margin: 5px;
-    padding: 10px;
+    padding: 5px;
     background-color: white;
     border: 2px solid #333;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -38,14 +42,14 @@ body {
 .title-section {
     text-align: center;
     border-bottom: 2px solid #333;
-    padding-bottom: 0.5vw;
+    padding-bottom: 2px;
 }
 
 .title-section h1 {
-    font-size: 2.5em;
-    font-weight: bold;
-    letter-spacing: 2px;
-    margin-bottom: 2px;
+    font-family: 'Chomsky';
+    font-size: 3.5em;
+    letter-spacing: 3px;
+    margin-bottom: 5px;
 }
 
 .title-section h2 {
@@ -306,17 +310,85 @@ body {
     width: 100%;
     box-sizing: border-box;
     position: relative;
+    height: 35.5vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .Map {
     width: 100%;
     min-height: 160px;
-    height: 30vh;
     background-color: #f0f0f0;
     position: relative;
     overflow: hidden;
+    flex-grow: 1;
+    min-height: 0;
 }
 
+/* ------- Map Tooltip -------- */
+/*
+    This styles the static info panel in the bottom-right corner of the map.
+    It shows a summary by default and squirrel details on hover.
+*/
+.map-tooltip {
+  /* --- Positioning & Sizing --- */
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 165px;  
+  height: 260px; 
+  
+  /* --- Box Model --- */
+  padding: 10px;
+  border: 2px solid #333;
+  border-radius: 4px;
+
+  /* --- Appearance --- */
+  background-color: #f9f9f9; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  font-family: 'Times New Roman', Times, serif;
+  color: #333;
+
+  /* --- Functionality --- */
+  pointer-events: none; 
+  overflow-y: auto;   
+}
+
+/* --- Styles for the content *inside* the tooltip --- */
+
+.map-tooltip .tooltip-title {
+  margin: 0 0 5px 0; /* CHANGED (consistent bottom margin) */
+  border-bottom: 1px solid #ccc; /* CHANGED (color matches hr) */
+  padding-bottom: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333; 
+}
+
+.map-tooltip .tooltip-subtitle {
+  font-size: 15px;
+  font-weight: bold;
+  display: block;
+  margin: 0 0 5px 0; /* CHANGED */
+}
+
+.map-tooltip .tooltip-stat {
+  display: flex;
+  justify-content: space-between; 
+  margin-top: 0; /* CHANGED (base margin) */
+  font-size: 15px;
+}
+
+.map-tooltip .tooltip-stat span {
+  color: #444; 
+}
+
+/* A simple horizontal line */
+.map-tooltip hr {
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 5px 0; /* CHANGED */
+}
 /* ------- Brush Toggle Button for Map ------- */
 .brush-toggle-button {
   position: absolute;
@@ -332,6 +404,7 @@ body {
   transition: all 0.3s ease;
   border-radius: 4px;
   user-select: none;
+  width: 165px;
 }
 
 .brush-toggle-button:hover {
@@ -381,6 +454,7 @@ body {
 }
 
 .butterfly-title {
+    font-family: 'Times New Roman', Times, serif;
     position: absolute;
     left: 50%;
     transform: translateX(-50%);

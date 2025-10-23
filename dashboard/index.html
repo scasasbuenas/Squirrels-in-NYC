@@ -12,18 +12,15 @@
     <script src="./idioms/butterflyChart.js"></script>
     <script src="./idioms/map.js"></script>
     <script src="./script.js"></script>
-
+  </head>
+  <body>
     <div class="dashboard-container">
-      <!-- Title Section -->
       <div class="title-section">
-        <h1>SQUIRREL ACTIVITY DASHBOARD</h1>
-        <h2>Central Park, NYC</h2>
+        <h1>The Squirrel Times</h1>
       </div>
       
-      <!-- Filter Bar Section -->
       <div class="filter-section">
         <div class="behavior-filters">
-          <!-- Food Filter -->
           <div class="filter-dropdown">
             <button class="filter-btn" data-filter="food">Food ▼</button>
             <div class="dropdown-content" data-category="food">
@@ -38,7 +35,6 @@
             </div>
           </div>
 
-          <!-- Movement Filter -->
           <div class="filter-dropdown">
             <button class="filter-btn" data-filter="movement">Movement ▼</button>
             <div class="dropdown-content" data-category="movement">
@@ -57,7 +53,6 @@
             </div>
           </div>
 
-          <!-- Sound Filter -->
           <div class="filter-dropdown">
             <button class="filter-btn" data-filter="sound">Sound ▼</button>
             <div class="dropdown-content" data-category="sound">
@@ -72,7 +67,6 @@
             </div>
           </div>
 
-          <!-- Tail Filter -->
           <div class="filter-dropdown">
             <button class="filter-btn" data-filter="tail">Tail ▼</button>
             <div class="dropdown-content" data-category="tail">
@@ -87,7 +81,6 @@
             </div>
           </div>
 
-          <!-- Human Interaction Filter -->
           <div class="filter-dropdown">
             <button class="filter-btn" data-filter="human">Human Interaction ▼</button>
             <div class="dropdown-content" data-category="human">
@@ -106,7 +99,6 @@
             </div>
           </div>
 
-          <!-- Age Filter -->
           <div class="filter-dropdown">
             <button class="filter-btn" data-filter="age">Age ▼</button>
             <div class="dropdown-content" data-category="age">
@@ -122,7 +114,6 @@
                 <input type="checkbox" data-behavior="unknown" data-column="Age" data-value="Unknown">
                 <span>Unknown</span>
               </label>
-              
             </div>
           </div>
         </div>
@@ -155,9 +146,7 @@
         </div>
       </div>
 
-      <!-- Main Dashboard Content -->
       <div class="dashboard-content">
-        <!-- Map Section - Full Width -->
         <div class="map-section">
           <button id="brush-toggle-btn" class="brush-toggle-button">
             Toggle Brushing
@@ -165,28 +154,23 @@
           <div class="Map"></div>
         </div>
         
-        <!-- Bottom Charts Section - Side by Side -->
         <div class="bottom-charts">
-          <!-- Butterfly Chart -->
           <div class="butterfly-section">
             <div style="position: relative; display: flex; justify-content: flex-end; align-items: center;">
-              <!-- Title Container -->
               <h3 class="butterfly-title">Squirrel Activity by Fur Color & Time of Day</h3>
 
-              <!-- Toggle -->
               <div class="toggle-container">
-                  <span class="toggle-label left">Absolute</span>
-                  <label class="switch">
-                      <input type="checkbox" id="butterfly-scale-toggle" name="butterfly-scale-mode" autocomplete="off">
-                      <span class="slider round"></span>
-                  </label>
-                  <span class="toggle-label right">%</span>
+                <span class="toggle-label left">Absolute</span>
+                <label class="switch">
+                  <input type="checkbox" id="butterfly-scale-toggle" name="butterfly-scale-mode" autocomplete="off">
+                  <span class="slider round"></span>
+                </label>
+                <span class="toggle-label right">%</span>
               </div>
-          </div>
+            </div>
             <div class="ButterflyChart"></div>
           </div>
           
-          <!-- Line Chart -->
           <div class="linechart-section">
             <h3>Squirrel Activity Across Temperature</h3>
             <div class="LineChart"></div>
@@ -196,38 +180,37 @@
     </div>
 
     <script>
-        function closePopup() {
-            const popup = document.getElementById('instructionsPopup');
-            popup.classList.add('hidden');
-            // Remove from DOM after animation
-            setTimeout(() => {
-                popup.style.display = 'none';
-            }, 300);
+      function closePopup() {
+        const popup = document.getElementById('instructionsPopup');
+        popup.classList.add('hidden');
+        // Remove from DOM after animation
+        setTimeout(() => {
+          popup.style.display = 'none';
+        }, 300);
+      }
+
+      // Optional: Close popup when clicking outside
+      document.getElementById('instructionsPopup').addEventListener('click', function(e) {
+        if (e.target === this) {
+          closePopup();
         }
+      });
 
-        // Optional: Close popup when clicking outside
-        document.getElementById('instructionsPopup').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closePopup();
-            }
-        });
-
-        // Optional: Close popup with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closePopup();
-            }
-        });
+      // Optional: Close popup with Escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          closePopup();
+        }
+      });
     </script>
 
-    <!-- Debug -->
-     <script>
-        console.log("Script tag executed")
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM Content Loaded - calling init()");
-            init();
-        })
-     </script>
+    <script>
+      console.log("Script tag executed")
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM Content Loaded - calling init()");
+        init();
+      })
+    </script>
 
   </body>
 </html>

@@ -8,6 +8,7 @@ const MapModule = (function() {
     let mapBrush = null;
     let svg = null;
     let brushMode = false;
+    // 'imageWidth' variable removed as it's no longer needed for tooltip positioning
 
     const furColors = {
         gray: "#808080",
@@ -20,6 +21,21 @@ const MapModule = (function() {
         'kuks', 'quaas', 'tail flags', 'tail twitches',
         'approaches', 'indifferent', 'runs from'
     ];
+
+    const activityDisplayMap = {
+        'running': 'running around',
+        'climbing': 'climbing',
+        'chasing': 'chasing',
+        'eating': 'eating',
+        'foraging': 'foraging',
+        'kuks': 'kukking',
+        'quaas': 'quaaing',
+        'tail flags': 'flagging its tail',
+        'tail twitches': 'twitching its tail',
+        'approaches': 'approaching humans',
+        'indifferent': 'indifferent to humans',
+        'runs from': 'running from humans'
+    };
 
     const colorScale = d3.scaleOrdinal()
         .domain(allActivities)
@@ -41,9 +57,9 @@ const MapModule = (function() {
         const image_height = height;
         const image_width = (3024 * image_height) / 649;
 
-        const screenTL = [40, 7];
-        const screenTR = [image_width + 27, 7];
-        const screenBL = [40, image_height - 7];
+        const screenTL = [47, 7];
+        const screenTR = [image_width + 30, 7];
+        const screenBL = [47, image_height - 7];
 
         const geoVecX = [geoTR[0] - geoTL[0], geoTR[1] - geoTL[1]];
         const geoVecY = [geoBL[0] - geoTL[0], geoBL[1] - geoTL[1]];
@@ -140,6 +156,8 @@ const MapModule = (function() {
         const width = container.node().offsetWidth || 800;
         const height = container.node().offsetHeight || 600;
 
+        // Image width calculation removed - no longer needed
+
         // Create SVG only once
         svg = container.select("svg");
         if (svg.empty()) {
@@ -151,12 +169,9 @@ const MapModule = (function() {
             const mapGroup = svg.append("g").attr("class", "map-group");
 
             // Background image
-            const image_height = height;
-            const image_width = (3024 * image_height) / 649;
-
             mapGroup.append("image")
                 .attr("href", "../images/central_park_overlay.jpg")
-                .attr("opacity", 0.75)
+                .attr("opacity", 0.7)
                 .attr("x", 0)  // Align to left
                 .attr("y", 0)  // Align to top
                 .attr("height", "100%");
@@ -178,7 +193,9 @@ const MapModule = (function() {
                     mapGroup.selectAll("g.squirrel-dot")
                         .attr("transform", d => {
                             const [x, y] = geoToScreen(d.geometry.coordinates[0], d.geometry.coordinates[1], width, height);
-                            const k = 1 / currentTransform.k;
+                            let k = 1 / currentTransform.k;
+                            if (currentTransform.k != 1)
+                                k = k / 0.9;
                             return `translate(${x},${y}) scale(${k})`;
                         });
                 });
@@ -200,6 +217,7 @@ const MapModule = (function() {
                     if (typeof SelectionModule !== 'undefined') {
                         SelectionModule.clear();
                         styleDots(null);
+                        showDefaultInfo(); // Update tooltip on clear
                     }
                     return;
                 }
@@ -226,6 +244,7 @@ const MapModule = (function() {
                 if (typeof SelectionModule !== 'undefined') {
                     SelectionModule.set(ids);
                     styleDots(SelectionModule.get()?.ids);
+                    showDefaultInfo(); // Update tooltip with new selection
                 }
             }
 
@@ -244,56 +263,127 @@ const MapModule = (function() {
 
             brushLayer.call(mapBrush);
 
-            // No keyboard listener - only button toggle now
         } else {
             svg = container.select("svg");
         }
 
         const mapGroup = svg.select(".map-group");
 
-        // Tooltip
         let tooltip = container.select(".map-tooltip");
         if (tooltip.empty()) {
             tooltip = container.append("div")
-                .attr("class", "map-tooltip")
-                .style("position", "absolute")
-                .style("background-color", "white")
-                .style("border", "1px solid black")
-                .style("padding", "5px 10px")
-                .style("border-radius", "4px")
-                .style("pointer-events", "none")
-                .style("opacity", 0);
+                .attr("class", "map-tooltip"); 
         }
 
-        function showTooltip(event, d) {
+        // --- Tooltip Content Functions ---
+        function showDefaultInfo() {
+            const selectedIds = (typeof SelectionModule !== 'undefined')
+                ? SelectionModule.get()?.ids
+                : new Set();
+            
+            const totalSelected = selectedIds.size;
+            
+            let featuresToCount;
+            let totalToShow;
+            let titleText;
+
+            if (totalSelected > 0) {
+                // If squirrels ARE selected, count only those
+                featuresToCount = lastData.features.filter(f => selectedIds.has(f.properties.id));
+                totalToShow = totalSelected;
+                titleText = "Total Selected:"; // This variable is not used in your new HTML, but I'll leave it.
+            } else {
+                // If 0 are selected, count ALL squirrels on the map
+                featuresToCount = lastData.features;
+                totalToShow = lastData.features ? lastData.features.length : 0;
+                titleText = "Total Squirrels:"; // This variable is not used in your new HTML, but I'll leave it.
+            }
+
+            let grayCount = 0;
+            let blackCount = 0;
+            let cinnamonCount = 0;
+
+            if (featuresToCount) {
+                featuresToCount.forEach(f => {
+                    const fur = f.properties.furColor?.toLowerCase();
+                    if (fur === 'gray') grayCount++;
+                    else if (fur === 'black') blackCount++;
+                    else if (fur === 'cinnamon') cinnamonCount++;
+                });
+            }
+            
+            tooltip.html(`
+                <h4 class="tooltip-title">Squirrels Spotted!</h4>
+                <div class="tooltip-stat">
+                    <span>What're they up to?
+                    A lot of foraging this week, not a lot of noise... Better not bother the humans!</span>
+                </div>
+                <hr>
+                <b class="tooltip-subtitle">More Details:</b>
+                <div class="tooltip-stat">
+                    <span>Total Selected:</span>
+                    <b>${totalToShow}</b>
+                </div>
+                <div class="tooltip-stat">
+                    <span>Gray:</span>
+                    <b>${grayCount}</b>
+                </div>
+                <div class="tooltip-stat">
+                    <span>Black:</span>
+                    <b>${blackCount}</b>
+                </div>
+                <div class="tooltip-stat">
+                    <span>Cinnamon:</span>
+                    <b>${cinnamonCount}</b>
+                </div>
+            `);
+        }
+        /**
+         * Formats a date string from MMDDYYYY to MM/DD/YYYY.
+         */
+        function formatDate(dateInput) {
+            if (!dateInput) {
+                return 'N/A';
+            }
+            const dateStr = String(dateInput);
+            
+            // Check if it's the 8-digit format we expect
+            if (dateStr.length === 8) {
+                const mm = dateStr.substring(0, 2);
+                const dd = dateStr.substring(2, 4);
+                const yyyy = dateStr.substring(4, 8);
+                return `${dd}/${mm}/${yyyy}`;
+            }
+            
+            // If it's not the expected format, return it as is.
+            return dateStr;
+        }
+
+        /**
+         * Shows info for a specific squirrel (on hover)
+         */
+        function showSquirrelInfo(event, d) {
             const props = d.properties;
-            tooltip.style("opacity", 1)
-                .html(`
-                    <b>Squirrel ID:</b> ${props.id}<br>
-                    <b>Date:</b> ${props.date}<br>
-                    <b>Age:</b> ${props.age}<br>
-                    <b>Fur Color:</b> ${props.furColor}
-                `);
-        }
 
-        function moveTooltip(event) {
-            const [x, y] = d3.pointer(event, container.node());
-            const tooltipNode = tooltip.node();
-            const tooltipWidth = tooltipNode.offsetWidth;
-            const tooltipHeight = tooltipNode.offsetHeight;
-            const containerWidth = container.node().offsetWidth;
-            const containerHeight = container.node().offsetHeight;
+            // Get the list of active activities
+            const activeActivities = allActivities.filter(a => props[a] === true);
+            
+            // Format the list for display
+            let activitiesHtml = 'None';
+            if (activeActivities.length > 0) {
+                activitiesHtml = activeActivities
+                    .map(key => activityDisplayMap[key] || key) // Use the map, or the key as a fallback
+                    .join(', and ');
+            }
+            tooltip.html(`
+                <h4 class="tooltip-title">Who's that squirrel?</h4>
 
-            let left = x + 10;
-            let top = y + 10;
-            if (left + tooltipWidth > containerWidth) left = x - tooltipWidth - 10;
-            if (top + tooltipHeight > containerHeight) top = y - tooltipHeight - 10;
+                <div class="tooltip-stat">
+                    <span>It's <i>${props.id || 'N/A'}</i>! Aged <i>${props.age || 'Unknown'}</i>, with <i>${props.furColor || 'Unknown'}</i> colored fur,
+                    on <i>${formatDate(props.date) || 'N/A'}</i>, this squirrel was seen <i>${activitiesHtml}</i>!</span>
 
-            tooltip.style("left", `${left}px`).style("top", `${top}px`);
-        }
-
-        function hideTooltip() {
-            tooltip.style("opacity", 0);
+                </div>
+            `);
         }
 
         // Filters
@@ -345,9 +435,8 @@ const MapModule = (function() {
                     });
                 }
             })
-            .on("mouseover", showTooltip)
-            .on("mousemove", moveTooltip)
-            .on("mouseout", hideTooltip);
+            .on("mouseover", showSquirrelInfo) // Show squirrel details on hover
+            .on("mouseout", showDefaultInfo);  // Revert to summary on mouse out
 
         // Restore selection only if there is a selection
         if (typeof SelectionModule !== 'undefined') {
@@ -364,11 +453,15 @@ const MapModule = (function() {
         // Restore zoom
         svg.call(zoom.transform, currentTransform);
 
+        // Set initial tooltip state
+        showDefaultInfo();
+
         MapModule.clearBrush = function() {
             if (brushLayer && mapBrush) {
                 brushLayer.call(mapBrush.move, null);
                 if (typeof SelectionModule !== 'undefined') {
                     SelectionModule.clear();
+                    showDefaultInfo(); // Update tooltip after clearing
                 }
             }
         };
