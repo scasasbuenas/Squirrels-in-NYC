@@ -4,7 +4,7 @@ const ButterflyChartModule = (function() {
 
     const colorScale = d3.scaleOrdinal()
         .domain(allActivities)
-        .range(['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
+        .range(['#5493c0ff','#f8cf5cff','#5b9e5bff','#ca6060ff','#9277acff','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
 
     const furColors = ["Gray","Cinnamon","Black"];
 
@@ -122,7 +122,10 @@ const ButterflyChartModule = (function() {
             .attr("x", totalWidth / 2)
             .attr("y", margin.top / 1.5)
             .attr("text-anchor", "middle")
-            .text(`${furColor} Squirrels`);
+            .text(`${furColor} Squirrels`)
+            .style("font-family", "'Times New Roman', Times, serif")
+            .style("font-weight", "bold")
+            .style("text-color", "#333");
 
         const yScale = d3.scaleBand()
             .domain(allActivities)

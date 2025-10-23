@@ -10,6 +10,7 @@ const LineChartModule = (function() {
     let xDomainGlobal = null;
     let yDomainGlobal = null;
     let currentXDomain = null;
+    let currentYDomain = null; // <-- NEW: To store Y-axis zoom state
 
     function createLineChart(originalData, containerSelector) {
         lastContainerSelector = containerSelector;
@@ -87,7 +88,7 @@ const LineChartModule = (function() {
             .range([0, chartWidth]);
 
         const yScale = d3.scaleLinear()
-            .domain(yDomainGlobal)
+            .domain(currentYDomain || yDomainGlobal) // <-- MODIFIED: Use currentYDomain
             .range([chartHeight, 0]);
 
         // === clip path ===
@@ -128,10 +129,13 @@ const LineChartModule = (function() {
             .text("Temperature (°F)");
 
         // Y-axis
-        chart.append("g")
+        const yAxis = chart.append("g") // <-- MODIFIED: gave it a variable
             .attr("class", "y-axis")
-            .call(d3.axisLeft(yScale))
-            .append("text")
+            .call(d3.axisLeft(yScale));
+        
+        yAxis.node().__scale__ = yScale; // <-- NEW: Store scale
+
+        yAxis.append("text") // <-- MODIFIED: Appended to yAxis
             .attr("transform", "rotate(-90)")
             .attr("y", -50)
             .attr("x", -chartHeight / 2)
@@ -224,7 +228,7 @@ const LineChartModule = (function() {
                 .text(activity);
         });
 
-        // Brush / Zoom handler
+        // X-Axis Brush / Zoom handler
         function updateChart(event) {
             const extent = event && event.selection;
             if (!extent) return;
@@ -252,8 +256,60 @@ const LineChartModule = (function() {
                 .attr("cy", d => yScale(d.value));
         }
 
-        // DOUBLE-CLICK: Reset zoom 
+        // --- NEW: Y-Axis Zoom Handler (Mouse Wheel) ---
+        function handleYZoom(event) {
+            event.preventDefault(); // Stop page scrolling
+            event.stopPropagation();
+
+            const zoomFactor = 1.1;
+            const [y0, y1] = yScale.domain(); // y0 is always 0
+            let newY1;
+
+            if (event.deltaY < 0) {
+                // Zooming In (scroll up)
+                newY1 = y1 / zoomFactor;
+            } else {
+                // Zooming Out (scroll down)
+                newY1 = y1 * zoomFactor;
+            }
+
+            // Clamp zoom level:
+            // Don't zoom in past 1
+            // Don't zoom out past the global max
+            newY1 = Math.max(1, Math.min(yDomainGlobal[1], newY1));
+            
+            if (newY1 === y1) return; // No change
+
+            currentYDomain = [y0, newY1]; // Store the new zoom level
+            yScale.domain(currentYDomain);
+            
+            // Store the new scale
+            chart.select(".y-axis").node().__scale__ = yScale;
+
+            // Update Y-axis with a quick transition
+            chart.select(".y-axis")
+                .transition().duration(100)
+                .call(d3.axisLeft(yScale));
+
+            // Update lines
+            lineGroup.selectAll(".line")
+                .transition().duration(100)
+                .attr("d", d => line(d));
+
+            // Update dots
+            lineGroup.selectAll("circle")
+                .transition().duration(100)
+                .attr("cx", d => xScale(d.temperature)) // x remains the same
+                .attr("cy", d => yScale(d.value));
+    }
+
+        // --- NEW: Attach wheel event listener ---
+        chart.on("wheel.zoom", handleYZoom);
+
+
+        // --- MODIFIED: Double-click resets BOTH axes ---
         chart.on("dblclick", function() {
+            // Reset X-Axis
             currentXDomain = null;
             xScale.domain(xDomainGlobal);
             chart.select(".x-axis").node().__scale__ = xScale;
@@ -262,6 +318,16 @@ const LineChartModule = (function() {
                 .transition().duration(700)
                 .call(d3.axisBottom(xScale));
 
+            // Reset Y-Axis (NEW)
+            currentYDomain = null;
+            yScale.domain(yDomainGlobal);
+            chart.select(".y-axis").node().__scale__ = yScale;
+
+            chart.select(".y-axis")
+                .transition().duration(700)
+                .call(d3.axisLeft(yScale));
+
+            // Update visuals
             lineGroup.selectAll(".line")
                 .transition().duration(700)
                 .attr("d", d => line(d));
@@ -271,6 +337,7 @@ const LineChartModule = (function() {
                 .attr("cx", d => xScale(d.temperature))
                 .attr("cy", d => yScale(d.value));
 
+            // Clear X-brush selection
             lineGroup.select(".brush").call(brush.move, null);
         });
 
