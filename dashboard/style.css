@@ -350,7 +350,7 @@ body {
   right: 10px;
   bottom: 10px;
   width: 165px;  
-  height: 260px; 
+  height: 260px;
   
   /* --- Box Model --- */
   padding: 10px;
@@ -369,11 +369,11 @@ body {
   overflow-y: auto;   
 }
 
-/* --- Styles for the content *inside* the tooltip --- */
+/* --- Styles for the content inside the tooltip --- */
 
 .map-tooltip .tooltip-title {
-  margin: 0 0 5px 0; /* CHANGED (consistent bottom margin) */
-  border-bottom: 1px solid #ccc; /* CHANGED (color matches hr) */
+  margin: 0 0 5px 0;
+  border-bottom: 1px solid #ccc; 
   padding-bottom: 5px;
   font-size: 16px;
   font-weight: bold;
@@ -487,16 +487,6 @@ body {
 .ButterflyChart {
     width: 100%;
     height: 40vh;
-    /* background-color: #f9f9f9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #666;
-    font-size: 12px;
-    background-image: url('../images/butterfly-chart.jpeg');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center; */
 }
 
 .frequency-label {

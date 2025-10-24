@@ -4,8 +4,7 @@ const LineChartModule = (function() {
     // Color scale for different activities
     const colorScale = d3.scaleOrdinal()
         .domain(['Running', 'Climbing', 'Chasing', 'Eating', 'Foraging', 'Kuks', 'Quaas', 'Tail flags', 'Tail twitches', 'Approaches', 'Indifferent', 'Runs from'])
-        .range(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78']);
-
+        .range(['#5493c0ff','#f8cf5cff','#5b9e5bff','#ca6060ff','#9277acff','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
     let lastContainerSelector = null;
     let xDomainGlobal = null;
     let yDomainGlobal = null;
@@ -129,13 +128,13 @@ const LineChartModule = (function() {
             .text("Temperature (°F)");
 
         // Y-axis
-        const yAxis = chart.append("g") // <-- MODIFIED: gave it a variable
+        const yAxis = chart.append("g") 
             .attr("class", "y-axis")
             .call(d3.axisLeft(yScale));
         
-        yAxis.node().__scale__ = yScale; // <-- NEW: Store scale
+        yAxis.node().__scale__ = yScale; 
 
-        yAxis.append("text") // <-- MODIFIED: Appended to yAxis
+        yAxis.append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", -50)
             .attr("x", -chartHeight / 2)
@@ -302,12 +301,8 @@ const LineChartModule = (function() {
                 .attr("cx", d => xScale(d.temperature)) // x remains the same
                 .attr("cy", d => yScale(d.value));
     }
-
-        // --- NEW: Attach wheel event listener ---
         chart.on("wheel.zoom", handleYZoom);
 
-
-        // --- MODIFIED: Double-click resets BOTH axes ---
         chart.on("dblclick", function() {
             // Reset X-Axis
             currentXDomain = null;
@@ -402,11 +397,10 @@ const LineChartModule = (function() {
     }
 
     function updateLineChart(originalData) {
-        //if (lastContainerSelector) createLineChart(originalData, lastContainerSelector);
         if (!lastContainerSelector) return;
         const data = Array.isArray(originalData) ? originalData : [];
         d3.select(lastContainerSelector).selectAll("*").remove();
-        createLineChart(data.length ? data : [] /* fall back to empty array */ , lastContainerSelector);
+        createLineChart(data.length ? data : [], lastContainerSelector);
         
     }
 

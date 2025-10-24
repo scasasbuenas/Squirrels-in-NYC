@@ -39,8 +39,7 @@ const MapModule = (function() {
 
     const colorScale = d3.scaleOrdinal()
         .domain(allActivities)
-        .range(['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b',
-                '#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
+        .range(['#5493c0ff','#f8cf5cff','#5b9e5bff','#ca6060ff','#9277acff','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf','#aec7e8','#ffbb78']);
 
     const baseRadius = 3.5;
     const baseStroke = 0.3;
@@ -282,33 +281,35 @@ const MapModule = (function() {
                 : new Set();
             
             const totalSelected = selectedIds.size;
-            
+            const nonBehaviorFilteredFeatures = applyNonBehaviorFilters(lastData.features || []);
+
             let featuresToCount;
             let totalToShow;
-            let titleText;
 
             if (totalSelected > 0) {
-                // If squirrels ARE selected, count only those
-                featuresToCount = lastData.features.filter(f => selectedIds.has(f.properties.id));
-                totalToShow = totalSelected;
-                titleText = "Total Selected:"; // This variable is not used in your new HTML, but I'll leave it.
+                featuresToCount = nonBehaviorFilteredFeatures.filter(f => selectedIds.has(f.properties.id));
+                totalToShow = featuresToCount.length; 
             } else {
-                // If 0 are selected, count ALL squirrels on the map
-                featuresToCount = lastData.features;
-                totalToShow = lastData.features ? lastData.features.length : 0;
-                titleText = "Total Squirrels:"; // This variable is not used in your new HTML, but I'll leave it.
+                featuresToCount = nonBehaviorFilteredFeatures;
+                totalToShow = nonBehaviorFilteredFeatures ? nonBehaviorFilteredFeatures.length : 0;
             }
 
             let grayCount = 0;
             let blackCount = 0;
             let cinnamonCount = 0;
+            let adultCount = 0;
+            let juvenileCount = 0;
 
+            // This counting logic is now correct, as featuresToCount is pre-filtered.
             if (featuresToCount) {
                 featuresToCount.forEach(f => {
                     const fur = f.properties.furColor?.toLowerCase();
                     if (fur === 'gray') grayCount++;
                     else if (fur === 'black') blackCount++;
                     else if (fur === 'cinnamon') cinnamonCount++;
+                    const age = f.properties.age?.toLowerCase();
+                    if (age === 'adult') adultCount++;
+                    else if (age === 'juvenile') juvenileCount++;
                 });
             }
             
@@ -316,7 +317,7 @@ const MapModule = (function() {
                 <h4 class="tooltip-title">Squirrels Spotted!</h4>
                 <div class="tooltip-stat">
                     <span>What're they up to?
-                    A lot of foraging this week, not a lot of noise... Better not bother the humans!</span>
+                    A lot of foraging this week, not a lot of noise... shh guys!</span>
                 </div>
                 <hr>
                 <b class="tooltip-subtitle">More Details:</b>
@@ -336,6 +337,14 @@ const MapModule = (function() {
                     <span>Cinnamon:</span>
                     <b>${cinnamonCount}</b>
                 </div>
+                <div class="tooltip-stat">
+                    <span>Adults:</span>
+                    <b>${adultCount}</b>
+                </div>
+                <div class="tooltip-stat">
+                    <span>Juveniles:</span>
+                    <b>${juvenileCount}</b>
+                </div>
             `);
         }
         /**
@@ -346,8 +355,7 @@ const MapModule = (function() {
                 return 'N/A';
             }
             const dateStr = String(dateInput);
-            
-            // Check if it's the 8-digit format we expect
+
             if (dateStr.length === 8) {
                 const mm = dateStr.substring(0, 2);
                 const dd = dateStr.substring(2, 4);
@@ -355,7 +363,6 @@ const MapModule = (function() {
                 return `${dd}/${mm}/${yyyy}`;
             }
             
-            // If it's not the expected format, return it as is.
             return dateStr;
         }
 
@@ -364,15 +371,12 @@ const MapModule = (function() {
          */
         function showSquirrelInfo(event, d) {
             const props = d.properties;
-
-            // Get the list of active activities
             const activeActivities = allActivities.filter(a => props[a] === true);
             
-            // Format the list for display
             let activitiesHtml = 'None';
             if (activeActivities.length > 0) {
                 activitiesHtml = activeActivities
-                    .map(key => activityDisplayMap[key] || key) // Use the map, or the key as a fallback
+                    .map(key => activityDisplayMap[key] || key) 
                     .join(', and ');
             }
             tooltip.html(`
@@ -435,10 +439,9 @@ const MapModule = (function() {
                     });
                 }
             })
-            .on("mouseover", showSquirrelInfo) // Show squirrel details on hover
-            .on("mouseout", showDefaultInfo);  // Revert to summary on mouse out
+            .on("mouseover", showSquirrelInfo) 
+            .on("mouseout", showDefaultInfo);  
 
-        // Restore selection only if there is a selection
         if (typeof SelectionModule !== 'undefined') {
             const selectedIds = SelectionModule.get()?.ids;
             if (selectedIds && selectedIds.size > 0) {
