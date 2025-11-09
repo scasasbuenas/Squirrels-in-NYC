@@ -169,7 +169,7 @@ const MapModule = (function() {
 
             // Background image
             mapGroup.append("image")
-                .attr("href", "../images/central_park_overlay.jpg")
+                .attr("href", "images/central_park_overlay.jpg")
                 .attr("opacity", 0.7)
                 .attr("x", 0)  // Align to left
                 .attr("y", 0)  // Align to top
